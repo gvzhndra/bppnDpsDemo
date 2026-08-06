@@ -10,7 +10,7 @@
   <script>guardDashboardPage();</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-  <link rel="stylesheet" href="css/style.css?v=4.7">
+  <link rel="stylesheet" href="css/style.css?v=4.8">
 </head>
 
 <body>
@@ -208,7 +208,7 @@
         <button class="foto-modal-close" id="fotoModalClose" aria-label="Tutup">✕</button>
       </div>
       <div class="foto-modal-actions">
-        <input type="file" accept="image/*" id="fotoInputKomputer" style="display:none;">
+        <input type="file" accept="image/*" multiple id="fotoInputKomputer" style="display:none;">
         <input type="file" accept="image/*" capture="environment" id="fotoInputKamera" style="display:none;">
         <button class="btn-upload-komputer" id="btnUploadKomputer">🖼️ Upload dari Komputer</button>
         <!-- tombol kamera di-render via JS hanya saat mobile -->
@@ -218,6 +218,32 @@
           <span class="empty-icon">📷</span>
           <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Preview & Konfirmasi Upload Foto -->
+  <div class="foto-preview-overlay" id="fotoPreviewOverlay" style="display:none;">
+    <div class="foto-preview-modal">
+      <div class="foto-preview-header">
+        <div>
+          <p class="foto-preview-title" id="fotoPreviewTitle">Konfirmasi Unggah Foto</p>
+          <p class="foto-preview-subtitle" id="fotoPreviewSubtitle">Periksa foto sebelum diunggah ke server</p>
+        </div>
+        <button class="foto-modal-close" id="fotoPreviewClose" aria-label="Batal">✕</button>
+      </div>
+      <div class="foto-preview-body" id="fotoPreviewBody">
+        <!-- Grid Preview Item -->
+      </div>
+      <div class="foto-preview-progress" id="fotoPreviewProgress" style="display:none;">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="fotoProgressBarFill" style="width: 0%;"></div>
+        </div>
+        <p class="progress-text" id="fotoProgressText">Mempersiapkan pengunggahan...</p>
+      </div>
+      <div class="foto-preview-actions" id="fotoPreviewActions">
+        <button class="btn-cancel-upload" id="btnCancelUpload">Batal</button>
+        <button class="btn-confirm-upload" id="btnConfirmUpload">🚀 Unggah Foto</button>
       </div>
     </div>
   </div>
@@ -239,8 +265,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  <script src="js/api.js?v=4.7"></script>
-  <script src="js/app.js?v=4.7"></script>
+  <script src="js/api.js?v=4.8"></script>
+  <script src="js/app.js?v=4.8"></script>
 
 </body>
 

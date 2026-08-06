@@ -200,21 +200,17 @@ async function fetchPhotos(assetId){
   }
 }
 async function addPhoto(entry){
-  showLoading('Mengunggah foto...');
   try{
     const res = await apiSend("addPhoto", { entry });
     if(!res.ok){
       if(isSessionError(res.error)){ handleSessionExpired(); return null; }
-      alert("Gagal menambah foto: " + res.error);
+      console.warn("Gagal menambah foto: " + res.error);
       return null;
     }
-    showToast('✓ Foto ditambahkan');
     return res;
   } catch(err){
-    alert("Gagal menambah foto: " + err);
+    console.error("Gagal menambah foto: " + err);
     return null;
-  } finally {
-    hideLoading();
   }
 }
 async function deletePhoto(id){

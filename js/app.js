@@ -1052,34 +1052,146 @@ async function loadAndRenderFotoModal(assetId) {
   }
 }
 
-// Proses upload file (dipakai oleh komputer & kamera)
-async function processPhotoUpload(file, assetId) {
-  if (!file) return;
-  var a = features.find(function(f) { return f.id === assetId; });
-  if (!a) return;
-  try {
-    showLoading('Memproses foto...');
-    var base64 = await compressImageToBase64(file);
-    var lat, lng, sumber_tag;
-    var exifGps = await getExifLocation(file);
-    if (exifGps) {
-      lat = exifGps[0]; lng = exifGps[1]; sumber_tag = 'exif_foto';
-    } else if (a.geomType === 'polygon' && isValidPolygonCoords(a.coords)) {
-      var c = computeCentroid(a.coords);
-      lat = c[0]; lng = c[1]; sumber_tag = 'centroid';
-    } else {
-      var gps = await getDeviceLocation();
-      if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
-      else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
-      else { lat = ''; lng = ''; sumber_tag = 'tidak_diketahui'; }
-    }
-    hideLoading();
-    var res = await addPhoto({ asset_id: assetId, base64, mimeType: file.type || 'image/jpeg', lat, lng, sumber_tag });
-    if (res) await loadAndRenderFotoModal(assetId);
-  } catch (err) {
-    hideLoading();
-    alert('Gagal memproses foto: ' + err);
+// ============================================================
+// MODAL PREVIEW & BATCH UPLOAD FOTO
+// ============================================================
+var _pendingUploadFiles = [];
+
+function openFotoPreviewModal(files) {
+  if (!files || !files.length) return;
+  _pendingUploadFiles = Array.from(files);
+
+  var overlay = document.getElementById('fotoPreviewOverlay');
+  var progress = document.getElementById('fotoPreviewProgress');
+  var actions = document.getElementById('fotoPreviewActions');
+  var btnConfirm = document.getElementById('btnConfirmUpload');
+
+  if (progress) progress.style.display = 'none';
+  if (actions) actions.style.display = 'flex';
+  if (btnConfirm) btnConfirm.disabled = false;
+
+  renderFotoPreviewGrid();
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function closeFotoPreviewModal() {
+  var overlay = document.getElementById('fotoPreviewOverlay');
+  if (overlay) overlay.style.display = 'none';
+  _pendingUploadFiles = [];
+}
+
+function renderFotoPreviewGrid() {
+  var body = document.getElementById('fotoPreviewBody');
+  var btnConfirm = document.getElementById('btnConfirmUpload');
+  var subtitle = document.getElementById('fotoPreviewSubtitle');
+
+  if (!_pendingUploadFiles.length) {
+    closeFotoPreviewModal();
+    return;
   }
+
+  if (subtitle) {
+    subtitle.textContent = _pendingUploadFiles.length + ' foto dipilih untuk aset ' + (_fotoModalState.assetName || '');
+  }
+
+  if (btnConfirm) {
+    btnConfirm.textContent = '🚀 Unggah ' + _pendingUploadFiles.length + ' Foto';
+  }
+
+  if (!body) return;
+
+  body.innerHTML = '<div class="foto-preview-grid">' +
+    _pendingUploadFiles.map(function(file, idx) {
+      var sizeKb = Math.round(file.size / 1024);
+      var sizeStr = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+      var tempUrl = URL.createObjectURL(file);
+      return '<div class="foto-preview-item" data-preview-idx="' + idx + '">' +
+        '<div class="foto-preview-img-wrap">' +
+          '<img src="' + tempUrl + '" alt="Preview foto">' +
+          '<button class="foto-preview-remove" data-idx="' + idx + '" title="Batal foto ini">✕</button>' +
+        '</div>' +
+        '<div class="foto-preview-info">' +
+          '<span class="foto-preview-filename" title="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + '</span>' +
+          '<span class="foto-preview-meta">' + sizeStr + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+
+  body.querySelectorAll('.foto-preview-remove').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var idx = parseInt(btn.dataset.idx, 10);
+      _pendingUploadFiles.splice(idx, 1);
+      renderFotoPreviewGrid();
+    });
+  });
+}
+
+async function startBatchPhotoUpload() {
+  if (!_pendingUploadFiles.length || !_fotoModalState.assetId) return;
+  var assetId = _fotoModalState.assetId;
+  var a = features.find(function(f) { return f.id === assetId; });
+  if (!a) { alert('Aset tidak ditemukan'); return; }
+
+  var progressEl = document.getElementById('fotoPreviewProgress');
+  var actionsEl = document.getElementById('fotoPreviewActions');
+  var fillEl = document.getElementById('fotoProgressBarFill');
+  var textEl = document.getElementById('fotoProgressText');
+
+  if (actionsEl) actionsEl.style.display = 'none';
+  if (progressEl) progressEl.style.display = 'block';
+
+  var total = _pendingUploadFiles.length;
+  var successCount = 0;
+
+  for (var i = 0; i < total; i++) {
+    var file = _pendingUploadFiles[i];
+    var pct = Math.round((i / total) * 100);
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (textEl) textEl.textContent = 'Mengunggah foto ' + (i + 1) + ' dari ' + total + ': ' + escapeHtml(file.name) + '...';
+
+    try {
+      var base64 = await compressImageToBase64(file, 1024);
+      var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
+      var exifGps = await getExifLocation(file);
+
+      if (exifGps) {
+        lat = exifGps[0]; lng = exifGps[1]; sumber_tag = 'exif_foto';
+      } else if (a.geomType === 'polygon' && isValidPolygonCoords(a.coords)) {
+        var c = computeCentroid(a.coords);
+        lat = c[0]; lng = c[1]; sumber_tag = 'centroid';
+      } else {
+        var gps = await getDeviceLocation();
+        if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
+        else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
+      }
+
+      var res = await addPhoto({ asset_id: assetId, base64: base64, mimeType: file.type || 'image/jpeg', lat: lat, lng: lng, sumber_tag: sumber_tag });
+      if (res && res.ok !== false) {
+        successCount++;
+      } else {
+        console.warn('Foto gagal diunggah:', file.name, res);
+      }
+    } catch (err) {
+      console.error('Gagal mengunggah foto ' + file.name + ':', err);
+    }
+  }
+
+  if (fillEl) fillEl.style.width = '100%';
+  if (textEl) textEl.textContent = '✓ Selesai! ' + successCount + ' dari ' + total + ' foto berhasil diunggah.';
+
+  setTimeout(async function() {
+    closeFotoPreviewModal();
+    await loadAndRenderFotoModal(assetId);
+    if (successCount > 0) {
+      showToast('✓ ' + successCount + ' foto berhasil diunggah');
+    }
+  }, 700);
+}
+
+// Legacy wrapper
+async function processPhotoUpload(file, assetId) {
+  if (file) openFotoPreviewModal([file]);
 }
 
 // ============================================================
@@ -1164,23 +1276,32 @@ function initFotoModal() {
     if (e.target === overlay) closeFotoModal();
   });
 
-  // Upload komputer
+  // Upload komputer (multi-file)
   var btnKomputer = document.getElementById('btnUploadKomputer');
   var inputKomputer = document.getElementById('fotoInputKomputer');
   if (btnKomputer) btnKomputer.addEventListener('click', function() { inputKomputer.click(); });
   if (inputKomputer) inputKomputer.addEventListener('change', function(e) {
-    var file = e.target.files && e.target.files[0];
+    var files = e.target.files;
     e.target.value = '';
-    if (file && _fotoModalState.assetId) processPhotoUpload(file, _fotoModalState.assetId);
+    if (files && files.length && _fotoModalState.assetId) openFotoPreviewModal(files);
   });
 
   // Upload kamera HP
   var inputKamera = document.getElementById('fotoInputKamera');
   if (inputKamera) inputKamera.addEventListener('change', function(e) {
-    var file = e.target.files && e.target.files[0];
+    var files = e.target.files;
     e.target.value = '';
-    if (file && _fotoModalState.assetId) processPhotoUpload(file, _fotoModalState.assetId);
+    if (files && files.length && _fotoModalState.assetId) openFotoPreviewModal(files);
   });
+
+  // Event handlers untuk Modal Preview Upload
+  var previewCloseBtn = document.getElementById('fotoPreviewClose');
+  var cancelUploadBtn = document.getElementById('btnCancelUpload');
+  var confirmUploadBtn = document.getElementById('btnConfirmUpload');
+
+  if (previewCloseBtn) previewCloseBtn.addEventListener('click', closeFotoPreviewModal);
+  if (cancelUploadBtn) cancelUploadBtn.addEventListener('click', closeFotoPreviewModal);
+  if (confirmUploadBtn) confirmUploadBtn.addEventListener('click', startBatchPhotoUpload);
 
   // Lightbox navigasi
   var lbClose = document.getElementById('lightboxClose');
