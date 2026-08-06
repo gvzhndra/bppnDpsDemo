@@ -179,6 +179,24 @@
 
   <div class="toast" id="toastMessage"></div>
 
+  <!-- Modal Persetujuan Akses Data -->
+  <div class="agreement-overlay" id="agreementOverlay">
+    <div class="agreement-modal">
+      <div class="agreement-icon">🔒</div>
+      <h3>Persetujuan Akses Data</h3>
+      <div class="agreement-statement">
+        "Saya setuju data pada halaman ini bersifat terbatas dan hanya untuk kepentingan dinas."
+      </div>
+      <p class="agreement-subtext">
+        Mohon konfirmasi persetujuan Anda untuk melanjutkan mengakses Dashboard Aset eks BPPN &amp; PPA KPKNL Denpasar.
+      </p>
+      <div class="agreement-actions">
+        <button type="button" class="btn-disagree" id="btnDisagree">Tidak Setuju</button>
+        <button type="button" class="btn-agree" id="btnAgree">Setuju</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
   <script src="js/api.js?v=3.9"></script>

@@ -259,3 +259,122 @@
     .modal{width:92vw;}
   }
 
+/* ---- Pop-up Modal Persetujuan Akses Data ---- */
+.agreement-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  padding: 16px;
+}
+
+.agreement-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.agreement-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 26px;
+  width: 480px;
+  max-width: 92vw;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  transform: scale(0.92) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agreement-overlay.open .agreement-modal {
+  transform: scale(1) translateY(0);
+}
+
+.agreement-icon {
+  width: 56px;
+  height: 56px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 16px;
+}
+
+.agreement-modal h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.agreement-statement {
+  background: #F8FAFC;
+  border-left: 4px solid var(--navy);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #1E293B;
+  font-weight: 600;
+  text-align: left;
+  margin: 0 0 12px;
+}
+
+.agreement-subtext {
+  font-size: 12.5px;
+  color: var(--text-mut);
+  line-height: 1.5;
+  margin: 0 0 22px;
+  text-align: left;
+}
+
+.agreement-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.agreement-actions button {
+  flex: 1;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-disagree {
+  background: #FFF5F5;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+}
+
+.btn-disagree:hover {
+  background: #FEE2E2;
+  border-color: #EF4444;
+  color: #B91C1C;
+}
+
+.btn-agree {
+  background: var(--navy);
+  color: #ffffff;
+  border: 1px solid var(--navy);
+}
+
+.btn-agree:hover {
+  background: var(--navy-dark);
+  border-color: var(--navy-dark);
+}
+
+

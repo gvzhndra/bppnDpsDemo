@@ -1331,8 +1331,38 @@ const btnLogout = document.getElementById('btnLogout');
 if (btnLogout) {
   btnLogout.addEventListener('click', () => {
     clearSession();
+    sessionStorage.removeItem('bppn_disclaimer_agreed');
     window.location.href = 'login.html';
   });
+}
+
+// Modal Persetujuan Akses Data
+function initAgreementModal() {
+  const overlay = document.getElementById('agreementOverlay');
+  const btnAgree = document.getElementById('btnAgree');
+  const btnDisagree = document.getElementById('btnDisagree');
+
+  if (!overlay) return;
+
+  const isAgreed = sessionStorage.getItem('bppn_disclaimer_agreed');
+  if (isAgreed !== 'true') {
+    overlay.classList.add('open');
+  }
+
+  if (btnAgree) {
+    btnAgree.addEventListener('click', () => {
+      sessionStorage.setItem('bppn_disclaimer_agreed', 'true');
+      overlay.classList.remove('open');
+    });
+  }
+
+  if (btnDisagree) {
+    btnDisagree.addEventListener('click', () => {
+      clearSession();
+      sessionStorage.removeItem('bppn_disclaimer_agreed');
+      window.location.href = 'login.html';
+    });
+  }
 }
 
 const btnRefresh = document.getElementById('btnRefresh');
@@ -1374,6 +1404,7 @@ const cardBatasBelumEl = document.getElementById('cardBatasBelumDitemukan');
 if (cardBatasBelumEl) cardBatasBelumEl.addEventListener('click', () => { specialFilter = 'no_poly'; switchTab('semua'); renderAll(); smoothScrollToTable(); });
 
 // Inisialisasi awal aplikasi
+initAgreementModal();
 renderUserBadge();
 applyRoleUI();
 switchTab('kluster');
