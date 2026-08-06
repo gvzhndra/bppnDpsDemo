@@ -257,6 +257,38 @@
     .view-value{text-align:left;}
 
     .modal{width:92vw;}
+
+    /* ---- KPI Panel: stack vertikal di mobile ---- */
+    .kpi-panel-container {
+      grid-template-columns: 1fr;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+
+    /* Hero block: lebih compact, horizontal layout */
+    .kpi-hero-block {
+      flex-direction: row;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+    }
+    .kpi-hero-block .kpi-hero-value strong { font-size: 24px; }
+    .kpi-hero-hint { display: none; }
+
+    /* Metrics block: 2 kolom di mobile (was 3) */
+    .kpi-metrics-block {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Item yang span 2 kolom tetap full-width */
+    .kpi-metrics-block .kpi-item[style*="span 2"] {
+      grid-column: span 2;
+    }
+
+    /* Status pills: tetap 2 kolom, tapi ukuran lebih kecil */
+    .kpi-pills-grid { gap: 6px; }
+    .status-pill { padding: 5px 8px; font-size: 10.5px; }
+    .pill-val { font-size: 12px; }
   }
 
 /* ---- Pop-up Modal Persetujuan Akses Data ---- */
