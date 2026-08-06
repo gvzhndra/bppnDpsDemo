@@ -34,7 +34,10 @@ async function apiGet(action, extraParams){
   try {
     return JSON.parse(text);
   } catch(e) {
-    if (isSessionError(text) || text.includes('<!DOCTYPE') || text.includes('<html')) {
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+      return { ok: false, error: "Koneksi ke Apps Script bermasalah (Server mengembalikan halaman HTML/Drive). Pastikan Web App disetel 'Anyone' (Siapa saja) di Apps Script." };
+    }
+    if (isSessionError(text)) {
       return { ok: false, error: "Sesi login tidak valid atau sudah kedaluwarsa. Silakan login ulang." };
     }
     return { ok: false, error: "Respon server tidak valid: " + text.substring(0, 80) };
@@ -50,7 +53,10 @@ async function apiSend(action, payload){
   try {
     return JSON.parse(text);
   } catch(e) {
-    if (isSessionError(text) || text.includes('<!DOCTYPE') || text.includes('<html')) {
+    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+      return { ok: false, error: "Koneksi ke Apps Script bermasalah (Server mengembalikan halaman HTML/Drive). Pastikan Web App disetel 'Anyone' (Siapa saja) di Apps Script." };
+    }
+    if (isSessionError(text)) {
       return { ok: false, error: "Sesi login tidak valid atau sudah kedaluwarsa. Silakan login ulang." };
     }
     return { ok: false, error: "Respon server tidak valid: " + text.substring(0, 80) };
