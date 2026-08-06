@@ -1337,32 +1337,40 @@ if (btnLogout) {
 }
 
 // Modal Persetujuan Akses Data
-function initAgreementModal() {
-  const overlay = document.getElementById('agreementOverlay');
-  const btnAgree = document.getElementById('btnAgree');
-  const btnDisagree = document.getElementById('btnDisagree');
+// Mengembalikan Promise yang resolve saat user klik Setuju.
+// loadFromServer() baru dipanggil setelah promise ini resolve.
+function showAgreementModal() {
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('agreementOverlay');
+    var btnAgree = document.getElementById('btnAgree');
+    var btnDisagree = document.getElementById('btnDisagree');
 
-  if (!overlay) { console.warn('[AgreementModal] overlay element not found!'); return; }
+    if (!overlay) {
+      console.warn('[AgreementModal] Elemen #agreementOverlay tidak ditemukan, langsung lanjut.');
+      resolve();
+      return;
+    }
 
-  // Selalu tampilkan modal saat halaman dimuat
-  overlay.classList.add('open');
+    // Tampilkan via inline style — bypass semua CSS/cache issue
+    overlay.style.display = 'flex';
 
-  if (btnAgree) {
-    btnAgree.onclick = function() {
-      overlay.classList.remove('open');
-    };
-  } else {
-    console.warn('[AgreementModal] btnAgree not found!');
-  }
+    if (btnAgree) {
+      btnAgree.onclick = function() {
+        overlay.style.display = 'none';
+        resolve();
+      };
+    } else {
+      console.warn('[AgreementModal] btnAgree tidak ditemukan');
+      resolve();
+    }
 
-  if (btnDisagree) {
-    btnDisagree.onclick = function() {
-      clearSession();
-      window.location.href = 'login.html';
-    };
-  } else {
-    console.warn('[AgreementModal] btnDisagree not found!');
-  }
+    if (btnDisagree) {
+      btnDisagree.onclick = function() {
+        clearSession();
+        window.location.href = 'login.html';
+      };
+    }
+  });
 }
 
 const btnRefresh = document.getElementById('btnRefresh');
@@ -1404,9 +1412,12 @@ const cardBatasBelumEl = document.getElementById('cardBatasBelumDitemukan');
 if (cardBatasBelumEl) cardBatasBelumEl.addEventListener('click', () => { specialFilter = 'no_poly'; switchTab('semua'); renderAll(); smoothScrollToTable(); });
 
 // Inisialisasi awal aplikasi
-initAgreementModal();
 renderUserBadge();
 applyRoleUI();
 switchTab('kluster');
 renderAll();
-loadFromServer();
+
+// Tampilkan modal persetujuan dulu, baru muat data dari server
+showAgreementModal().then(function() {
+  loadFromServer();
+});
