@@ -756,15 +756,13 @@ function renderViewPanel(a) {
         </span>
       </div>
     ` : '<div class="view-row"><span class="view-label">Buka di Peta</span><span class="view-value" style="color:var(--text-mut);">Belum ada koordinat</span></div>'}
-    ${extraSection}
     <div class="field" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">
-      <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Foto lapangan & Geotagging</label>
-      <div id="fotoGallery" class="foto-gallery small-note">Memuat foto...</div>
-      <input type="file" accept="image/*" id="foto-input" style="display:none;">
-      <div class="actions-row">
-        <button class="primary" id="btnTambahFoto" style="font-size:12px;">📷 Tambah foto lapangan</button>
-      </div>
+      <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Foto Lapangan</label>
+      <button class="btn-open-foto" id="btnOpenFotoModal" data-asset-id="${a.id}" data-asset-name="${escapeHtml(a.props.kode_aset || a.id)}">
+        📸 Lihat &amp; Kelola Foto Lapangan
+      </button>
     </div>
+    ${extraSection}
     <div class="field" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">
       <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Riwayat dokumen</label>
       <div id="historyList" class="small-note">Memuat riwayat...</div>
@@ -773,42 +771,12 @@ function renderViewPanel(a) {
     ${actionButtons}
   `;
 
-  const btnFoto = document.getElementById('btnTambahFoto');
-  if (btnFoto) {
-    btnFoto.addEventListener('click', () => {
-      document.getElementById('foto-input').click();
+  const btnOpenFoto = document.getElementById('btnOpenFotoModal');
+  if (btnOpenFoto) {
+    btnOpenFoto.addEventListener('click', () => {
+      openFotoModal(a.id, a.props.kode_aset || a.id);
     });
   }
-  document.getElementById('foto-input').addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-    try {
-      showLoading('Mengekstrak geotag & memproses foto...');
-      const base64 = await compressImageToBase64(file, 1600);
-      let lat, lng, sumber_tag;
-
-      // 1. Coba baca Geotag EXIF dari file foto HP
-      const exifGps = await getExifLocation(file);
-      if (exifGps) {
-        lat = exifGps[0]; lng = exifGps[1]; sumber_tag = "exif_foto";
-      } else if (a.geomType === "polygon" && isValidPolygonCoords(a.coords)) {
-        const c = computeCentroid(a.coords);
-        lat = c[0]; lng = c[1]; sumber_tag = "centroid";
-      } else {
-        const gps = await getDeviceLocation();
-        if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = "gps_hp"; }
-        else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = "titik_aset"; }
-        else { lat = ''; lng = ''; sumber_tag = "tidak_diketahui"; }
-      }
-      hideLoading();
-      const res = await addPhoto({ asset_id: a.id, base64, mimeType: file.type || 'image/jpeg', lat, lng, sumber_tag });
-      if (res) loadAndRenderPhotos(a.id);
-    } catch (err) {
-      hideLoading();
-      alert('Gagal memproses foto: ' + err);
-    }
-  });
 
   if (isAdmin()) {
     document.getElementById('btnEditAsset').addEventListener('click', () => selectAsset(a.id, 'edit'));
@@ -859,7 +827,8 @@ function renderViewPanel(a) {
 }
 
 // Kompresi foto lokal ke canvas JPEG base64
-function compressImageToBase64(file, maxDim = 1600) {
+// maxDim=1024, quality=0.75 → ramah storage (~100-250KB), tetap jelas
+function compressImageToBase64(file, maxDim = 1024) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -874,7 +843,7 @@ function compressImageToBase64(file, maxDim = 1600) {
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.80));
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
       };
       img.onerror = reject;
       img.src = e.target.result;
@@ -971,46 +940,286 @@ function getDeviceLocation() {
   });
 }
 
-async function loadAndRenderPhotos(assetId) {
-  const container = document.getElementById('fotoGallery');
-  if (!container) return;
-  const photos = await fetchPhotos(assetId);
-  const stillOpen = document.getElementById('fotoGallery');
-  if (!stillOpen) return;
+// ============================================================
+// GALERI FOTO MODAL — state terpusat
+// ============================================================
+var _fotoModalState = { assetId: null, assetName: '', photos: [], currentIdx: 0 };
+
+// Buka modal foto untuk sebuah aset
+async function openFotoModal(assetId, assetName) {
+  _fotoModalState.assetId = assetId;
+  _fotoModalState.assetName = assetName;
+
+  var overlay = document.getElementById('fotoModalOverlay');
+  var titleEl = document.getElementById('fotoModalTitle');
+  var subtitleEl = document.getElementById('fotoModalSubtitle');
+  var body = document.getElementById('fotoModalBody');
+
+  if (titleEl) titleEl.textContent = 'Foto Lapangan';
+  if (subtitleEl) subtitleEl.textContent = 'Aset: ' + assetName;
+
+  // Tampilkan skeleton sementara loading
+  if (body) {
+    body.innerHTML = '<div class="foto-modal-grid">' +
+      Array(8).fill('<div class="foto-skeleton"></div>').join('') + '</div>';
+  }
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Tambah tombol kamera hanya di mobile
+  _injectKameraBtn();
+
+  // Muat foto
+  await loadAndRenderFotoModal(assetId);
+}
+
+// Inject tombol kamera hanya saat mobile/tablet
+function _injectKameraBtn() {
+  var actionsEl = document.querySelector('.foto-modal-actions');
+  if (!actionsEl) return;
+  var existing = document.getElementById('btnKameraHP');
+  if (existing) existing.remove();
+
+  if (isMobileOrTablet()) {
+    var btn = document.createElement('button');
+    btn.className = 'btn-kamera-hp';
+    btn.id = 'btnKameraHP';
+    btn.innerHTML = '\ud83d\udcf7 Foto dengan Kamera';
+    btn.addEventListener('click', function() {
+      document.getElementById('fotoInputKamera').click();
+    });
+    actionsEl.appendChild(btn);
+  }
+}
+
+// Muat dan render grid foto di dalam modal
+async function loadAndRenderFotoModal(assetId) {
+  var body = document.getElementById('fotoModalBody');
+  if (!body) return;
+
+  var photos = await fetchPhotos(assetId);
+  _fotoModalState.photos = photos;
+
   if (!photos.length) {
-    stillOpen.innerHTML = '<p class="small-note" style="margin:0;">Belum ada foto lapangan.</p>';
+    body.innerHTML = '<div class="foto-modal-empty">' +
+      '<span class="empty-icon">\ud83d\udcf7</span>' +
+      '<p>Belum ada foto lapangan untuk aset ini.</p>' +
+      '<p style="font-size:11px;margin-top:4px;">Gunakan tombol di atas untuk menambah foto.</p>' +
+      '</div>';
     return;
   }
-  const sumberLabel = {
-    exif_foto: '📍 Geotag EXIF Foto',
-    centroid: '📍 Titik tengah poligon',
-    gps_hp: '📍 GPS HP',
-    titik_aset: '📍 Titik aset',
+
+  var sumberLabel = {
+    exif_foto: '\ud83d\udccd EXIF Foto',
+    centroid: '\ud83d\udccd Titik poligon',
+    gps_hp: '\ud83d\udccd GPS HP',
+    titik_aset: '\ud83d\udccd Titik aset',
     tidak_diketahui: 'Lokasi tidak diketahui'
   };
-  stillOpen.innerHTML = `<div class="foto-grid">${photos.map(p => `
-    <div class="foto-item">
-      <a href="${escapeHtml(p.url_foto)}" target="_blank" rel="noopener">
-        <img src="${escapeHtml(p.url_foto)}" loading="lazy" alt="Foto lapangan">
-      </a>
-      <div class="foto-meta">
-        <span>${escapeHtml(p.tanggal)}</span>
-        <span class="small-note" style="margin:0;">${escapeHtml(sumberLabel[p.sumber_tag] || p.sumber_tag || '-')}</span>
-        ${(p.lat && p.lng) ? `<a href="${googleMapsUrl(p.lat, p.lng)}" target="_blank" rel="noopener" style="font-size:10px;color:#EA4335;font-weight:500;">📍 Maps (${Number(p.lat).toFixed(4)}, ${Number(p.lng).toFixed(4)})</a>` : ''}
-        ${isAdmin() ? `<button class="danger btnDeleteFoto" data-id="${p.id}" style="padding:2px 8px;font-size:11px;">Hapus</button>` : ''}
-      </div>
-    </div>
-  `).join('')}</div>`;
 
+  body.innerHTML = '<div class="foto-modal-grid">' +
+    photos.map(function(p, idx) {
+      var delBtn = isAdmin()
+        ? '<button class="foto-thumb-del" data-id="' + escapeHtml(p.id) + '" title="Hapus foto">\u00d7</button>'
+        : '';
+      return '<div class="foto-thumb-wrap" data-idx="' + idx + '">' +
+        '<img src="' + escapeHtml(p.url_foto) + '" loading="lazy" alt="Foto lapangan">' +
+        '<div class="foto-thumb-overlay"><span>\ud83d\udd0d</span></div>' +
+        delBtn +
+        '</div>';
+    }).join('') + '</div>';
+
+  // Event: klik thumbnail → buka lightbox
+  body.querySelectorAll('.foto-thumb-wrap').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      if (e.target.classList.contains('foto-thumb-del') || e.target.closest('.foto-thumb-del')) return;
+      var idx = parseInt(el.dataset.idx, 10);
+      openLightbox(idx);
+    });
+  });
+
+  // Event: hapus foto (admin)
   if (isAdmin()) {
-    stillOpen.querySelectorAll('.btnDeleteFoto').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (confirm('Hapus foto ini?')) {
-          const ok = await deletePhoto(btn.dataset.id);
-          if (ok) loadAndRenderPhotos(assetId);
-        }
+    body.querySelectorAll('.foto-thumb-del').forEach(function(btn) {
+      btn.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        if (!confirm('Hapus foto ini?')) return;
+        var ok = await deletePhoto(btn.dataset.id);
+        if (ok) await loadAndRenderFotoModal(assetId);
       });
     });
+  }
+}
+
+// Proses upload file (dipakai oleh komputer & kamera)
+async function processPhotoUpload(file, assetId) {
+  if (!file) return;
+  var a = features.find(function(f) { return f.id === assetId; });
+  if (!a) return;
+  try {
+    showLoading('Memproses foto...');
+    var base64 = await compressImageToBase64(file);
+    var lat, lng, sumber_tag;
+    var exifGps = await getExifLocation(file);
+    if (exifGps) {
+      lat = exifGps[0]; lng = exifGps[1]; sumber_tag = 'exif_foto';
+    } else if (a.geomType === 'polygon' && isValidPolygonCoords(a.coords)) {
+      var c = computeCentroid(a.coords);
+      lat = c[0]; lng = c[1]; sumber_tag = 'centroid';
+    } else {
+      var gps = await getDeviceLocation();
+      if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
+      else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
+      else { lat = ''; lng = ''; sumber_tag = 'tidak_diketahui'; }
+    }
+    hideLoading();
+    var res = await addPhoto({ asset_id: assetId, base64, mimeType: file.type || 'image/jpeg', lat, lng, sumber_tag });
+    if (res) await loadAndRenderFotoModal(assetId);
+  } catch (err) {
+    hideLoading();
+    alert('Gagal memproses foto: ' + err);
+  }
+}
+
+// ============================================================
+// LIGHTBOX
+// ============================================================
+function openLightbox(startIdx) {
+  _fotoModalState.currentIdx = startIdx;
+  var lb = document.getElementById('fotoLightbox');
+  lb.style.display = 'flex';
+  renderLightboxFrame();
+  buildLightboxThumbs();
+}
+
+function closeLightbox() {
+  var lb = document.getElementById('fotoLightbox');
+  lb.style.display = 'none';
+}
+
+function renderLightboxFrame() {
+  var photos = _fotoModalState.photos;
+  var idx = _fotoModalState.currentIdx;
+  var p = photos[idx];
+  if (!p) return;
+
+  var sumberLabel = {
+    exif_foto: '\ud83d\udccd EXIF Foto', centroid: '\ud83d\udccd Titik poligon',
+    gps_hp: '\ud83d\udccd GPS HP', titik_aset: '\ud83d\udccd Titik aset', tidak_diketahui: 'Lokasi ?'
+  };
+
+  document.getElementById('lightboxImg').src = p.url_foto;
+  var metaText = [
+    escapeHtml(p.tanggal || ''),
+    escapeHtml(sumberLabel[p.sumber_tag] || p.sumber_tag || ''),
+    (p.lat && p.lng) ? '\ud83d\udccd (' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + ')' : ''
+  ].filter(Boolean).join(' · ');
+  document.getElementById('lightboxMeta').innerHTML = metaText;
+  document.getElementById('lightboxCounter').textContent = (idx + 1) + ' / ' + photos.length;
+
+  document.getElementById('lightboxPrev').disabled = idx === 0;
+  document.getElementById('lightboxNext').disabled = idx === photos.length - 1;
+
+  // Update active thumb
+  document.querySelectorAll('.lightbox-thumb').forEach(function(t, i) {
+    t.classList.toggle('active', i === idx);
+  });
+
+  // Scroll aktif thumb ke tengah
+  var activeTh = document.querySelector('.lightbox-thumb.active');
+  if (activeTh) activeTh.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function buildLightboxThumbs() {
+  var photos = _fotoModalState.photos;
+  var container = document.getElementById('lightboxThumbs');
+  container.innerHTML = photos.map(function(p, i) {
+    return '<img class="lightbox-thumb' + (i === _fotoModalState.currentIdx ? ' active' : '') +
+      '" src="' + escapeHtml(p.url_foto) + '" data-idx="' + i + '" alt="Thumb ' + (i+1) + '">';
+  }).join('');
+  container.querySelectorAll('.lightbox-thumb').forEach(function(t) {
+    t.addEventListener('click', function() {
+      _fotoModalState.currentIdx = parseInt(t.dataset.idx, 10);
+      renderLightboxFrame();
+    });
+  });
+}
+
+// ============================================================
+// INISIALISASI event handler foto modal & lightbox (dipanggil sekali)
+// ============================================================
+function initFotoModal() {
+  // Tutup modal
+  var closeBtn = document.getElementById('fotoModalClose');
+  var overlay = document.getElementById('fotoModalOverlay');
+  function closeFotoModal() {
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+    _fotoModalState.assetId = null;
+    _fotoModalState.photos = [];
+  }
+  if (closeBtn) closeBtn.addEventListener('click', closeFotoModal);
+  if (overlay) overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeFotoModal();
+  });
+
+  // Upload komputer
+  var btnKomputer = document.getElementById('btnUploadKomputer');
+  var inputKomputer = document.getElementById('fotoInputKomputer');
+  if (btnKomputer) btnKomputer.addEventListener('click', function() { inputKomputer.click(); });
+  if (inputKomputer) inputKomputer.addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file && _fotoModalState.assetId) processPhotoUpload(file, _fotoModalState.assetId);
+  });
+
+  // Upload kamera HP
+  var inputKamera = document.getElementById('fotoInputKamera');
+  if (inputKamera) inputKamera.addEventListener('change', function(e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file && _fotoModalState.assetId) processPhotoUpload(file, _fotoModalState.assetId);
+  });
+
+  // Lightbox navigasi
+  var lbClose = document.getElementById('lightboxClose');
+  var lbPrev = document.getElementById('lightboxPrev');
+  var lbNext = document.getElementById('lightboxNext');
+  if (lbClose) lbClose.addEventListener('click', closeLightbox);
+  if (lbPrev) lbPrev.addEventListener('click', function() {
+    if (_fotoModalState.currentIdx > 0) {
+      _fotoModalState.currentIdx--;
+      renderLightboxFrame();
+    }
+  });
+  if (lbNext) lbNext.addEventListener('click', function() {
+    if (_fotoModalState.currentIdx < _fotoModalState.photos.length - 1) {
+      _fotoModalState.currentIdx++;
+      renderLightboxFrame();
+    }
+  });
+
+  // Keyboard support lightbox
+  document.addEventListener('keydown', function(e) {
+    var lb = document.getElementById('fotoLightbox');
+    if (!lb || lb.style.display === 'none') return;
+    if (e.key === 'ArrowLeft') { if (_fotoModalState.currentIdx > 0) { _fotoModalState.currentIdx--; renderLightboxFrame(); } }
+    if (e.key === 'ArrowRight') { if (_fotoModalState.currentIdx < _fotoModalState.photos.length - 1) { _fotoModalState.currentIdx++; renderLightboxFrame(); } }
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // Klik luar area foto lightbox = tutup
+  var lbEl = document.getElementById('fotoLightbox');
+  if (lbEl) lbEl.addEventListener('click', function(e) {
+    if (e.target === lbEl) closeLightbox();
+  });
+}
+
+// Fungsi ini dipertahankan agar tidak breaking code lain yang mungkin memangilnya
+async function loadAndRenderPhotos(assetId) {
+  if (_fotoModalState.assetId === assetId) {
+    await loadAndRenderFotoModal(assetId);
   }
 }
 
@@ -1412,6 +1621,7 @@ const cardBatasBelumEl = document.getElementById('cardBatasBelumDitemukan');
 if (cardBatasBelumEl) cardBatasBelumEl.addEventListener('click', () => { specialFilter = 'no_poly'; switchTab('semua'); renderAll(); smoothScrollToTable(); });
 
 // Inisialisasi awal aplikasi
+initFotoModal();
 renderUserBadge();
 applyRoleUI();
 switchTab('kluster');

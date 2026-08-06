@@ -10,7 +10,7 @@
   <script>guardDashboardPage();</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-  <link rel="stylesheet" href="css/style.css?v=4.4">
+  <link rel="stylesheet" href="css/style.css?v=4.5">
 </head>
 
 <body>
@@ -197,10 +197,50 @@
     </div>
   </div>
 
+  <!-- Modal Galeri Foto Lapangan -->
+  <div class="foto-modal-overlay" id="fotoModalOverlay">
+    <div class="foto-modal" id="fotoModal">
+      <div class="foto-modal-header">
+        <div>
+          <p class="foto-modal-title" id="fotoModalTitle">Foto Lapangan</p>
+          <p class="foto-modal-subtitle" id="fotoModalSubtitle">Galeri foto dokumentasi aset</p>
+        </div>
+        <button class="foto-modal-close" id="fotoModalClose" aria-label="Tutup">✕</button>
+      </div>
+      <div class="foto-modal-actions">
+        <input type="file" accept="image/*" id="fotoInputKomputer" style="display:none;">
+        <input type="file" accept="image/*" capture="environment" id="fotoInputKamera" style="display:none;">
+        <button class="btn-upload-komputer" id="btnUploadKomputer">🖼️ Upload dari Komputer</button>
+        <!-- tombol kamera di-render via JS hanya saat mobile -->
+      </div>
+      <div class="foto-modal-body" id="fotoModalBody">
+        <div class="foto-modal-empty">
+          <span class="empty-icon">📷</span>
+          <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="foto-lightbox" id="fotoLightbox">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <div class="lightbox-img-wrap">
+      <button class="lightbox-nav prev" id="lightboxPrev">&#8592;</button>
+      <img id="lightboxImg" src="" alt="Foto lapangan">
+      <button class="lightbox-nav next" id="lightboxNext">&#8594;</button>
+    </div>
+    <div class="lightbox-meta">
+      <div id="lightboxMeta"></div>
+      <div class="lightbox-counter" id="lightboxCounter"></div>
+    </div>
+    <div class="lightbox-thumbs" id="lightboxThumbs"></div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  <script src="js/api.js?v=4.2"></script>
-  <script src="js/app.js?v=4.2"></script>
+  <script src="js/api.js?v=4.5"></script>
+  <script src="js/app.js?v=4.5"></script>
 
 </body>
 
