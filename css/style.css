@@ -266,19 +266,15 @@
   background: rgba(15, 23, 42, 0.65);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  z-index: 99999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  z-index: 99999 !important;
   padding: 16px;
 }
 
 .agreement-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
+  display: flex;
 }
 
 .agreement-modal {
@@ -287,14 +283,14 @@
   padding: 28px 26px;
   width: 480px;
   max-width: 92vw;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
   text-align: center;
-  transform: scale(0.92) translateY(10px);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalSlideIn 0.25s ease;
 }
 
-.agreement-overlay.open .agreement-modal {
-  transform: scale(1) translateY(0);
+@keyframes modalSlideIn {
+  from { transform: scale(0.92) translateY(16px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .agreement-icon {

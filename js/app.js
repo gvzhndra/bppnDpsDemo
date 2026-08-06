@@ -1342,28 +1342,26 @@ function initAgreementModal() {
   const btnAgree = document.getElementById('btnAgree');
   const btnDisagree = document.getElementById('btnDisagree');
 
-  if (!overlay) return;
+  if (!overlay) { console.warn('[AgreementModal] overlay element not found!'); return; }
 
-  const isAgreed = sessionStorage.getItem('bppn_disclaimer_agreed');
-  if (isAgreed === 'true') {
-    overlay.classList.remove('open');
-  } else {
-    overlay.classList.add('open');
-  }
+  // Selalu tampilkan modal saat halaman dimuat
+  overlay.classList.add('open');
 
   if (btnAgree) {
-    btnAgree.onclick = () => {
-      sessionStorage.setItem('bppn_disclaimer_agreed', 'true');
+    btnAgree.onclick = function() {
       overlay.classList.remove('open');
     };
+  } else {
+    console.warn('[AgreementModal] btnAgree not found!');
   }
 
   if (btnDisagree) {
-    btnDisagree.onclick = () => {
+    btnDisagree.onclick = function() {
       clearSession();
-      sessionStorage.removeItem('bppn_disclaimer_agreed');
       window.location.href = 'login.html';
     };
+  } else {
+    console.warn('[AgreementModal] btnDisagree not found!');
   }
 }
 
