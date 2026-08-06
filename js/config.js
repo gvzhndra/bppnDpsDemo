@@ -1,6 +1,6 @@
 // ================= KONFIGURASI =================
 // Ganti dengan URL Web App hasil deploy Apps Script kamu (lihat Code.gs)
-const API_URL = "https://script.google.com/macros/s/AKfycbwQmsq806xBoepakiGemP097w_DSsVgCd8S87KBZ_M23aiWnLp24o7VbqP5JT0NKJ6r/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbywJNkAHbWrXItlV9F9FpnSnBHsgiJz5ORZK3Ip90BxHvFtt0iAkXE5SEcC5tYqe6lwZQ/exec";
 // =================================================
 
 // Warna badge untuk status utama
