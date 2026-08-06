@@ -576,7 +576,7 @@ function addPhotoEntry_(entry) {
   let photoUrl = entry.url_foto || '';
   if (entry.base64) {
     try {
-      const folderName = "Foto_Aset_BPPN";
+      const folderName = "Foto_Aset_BPPN_Demo";
       let folder;
       const folders = DriveApp.getFoldersByName(folderName);
       if (folders.hasNext()) {
