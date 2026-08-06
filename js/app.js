@@ -1345,23 +1345,25 @@ function initAgreementModal() {
   if (!overlay) return;
 
   const isAgreed = sessionStorage.getItem('bppn_disclaimer_agreed');
-  if (isAgreed !== 'true') {
+  if (isAgreed === 'true') {
+    overlay.classList.remove('open');
+  } else {
     overlay.classList.add('open');
   }
 
   if (btnAgree) {
-    btnAgree.addEventListener('click', () => {
+    btnAgree.onclick = () => {
       sessionStorage.setItem('bppn_disclaimer_agreed', 'true');
       overlay.classList.remove('open');
-    });
+    };
   }
 
   if (btnDisagree) {
-    btnDisagree.addEventListener('click', () => {
+    btnDisagree.onclick = () => {
       clearSession();
       sessionStorage.removeItem('bppn_disclaimer_agreed');
       window.location.href = 'login.html';
-    });
+    };
   }
 }
 

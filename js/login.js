@@ -35,6 +35,7 @@ async function doLogin(){
     return;
   }
   saveSession({ token: res.token, username: res.username, role: res.role, nama: res.nama });
+  sessionStorage.removeItem('bppn_disclaimer_agreed');
   window.location.href = 'index.html';
 }
 
