@@ -591,7 +591,11 @@ function addPhotoEntry_(entry) {
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       photoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
     } catch (e) {
-      photoUrl = entry.base64.startsWith('data:') ? entry.base64 : 'data:' + (entry.mimeType || 'image/jpeg') + ';base64,' + entry.base64;
+      Logger.log("DriveApp Error: " + e.toString());
+      return { 
+        ok: false, 
+        error: "Google Drive Error: Izin Google Drive belum diberikan pada Apps Script atau Web App belum di-deploy sebagai Versi Baru. Detail: " + e.toString() 
+      };
     }
   }
 
