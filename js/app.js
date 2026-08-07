@@ -838,30 +838,30 @@ function renderViewPanel(a) {
   loadAndRenderHistory(a.id);
 }
 
-// Kompresi foto lokal ke canvas JPEG base64 (Cepat, Hemat RAM, Bulletproof)
+// Kompresi foto lokal ke canvas JPEG base64 (Cepat, Hemat RAM, Permanent Base64)
 function compressImageToBase64(file, maxDim = 800) {
   return new Promise((resolve) => {
     try {
-      const objectUrl = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(objectUrl);
-        let w = img.width, h = img.height;
-        if (w > maxDim || h > maxDim) {
-          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-          else { w = Math.round(w * maxDim / h); h = maxDim; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => resolve(null);
+        img.src = e.target.result;
       };
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        resolve(null);
-      };
-      img.src = objectUrl;
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
     } catch(e) {
       resolve(null);
     }
@@ -1073,9 +1073,12 @@ function renderPhotoCardsGrid(photos, gridEl) {
     var tagText = sumberLabel[p.sumber_tag] || p.sumber_tag || '';
     var coordText = (p.lat && p.lng) ? '(' + Number(p.lat).toFixed(4) + ', ' + Number(p.lng).toFixed(4) + ')' : '';
 
+    var displaySrc = p.url_foto || p.previewUrl || p.base64 || '';
+    var fallbackSrc = p.previewUrl || p.base64 || p.url_foto || '';
+
     return '<div class="foto-card" id="fotoCard_' + (p.id || i) + '">' +
-      '<div class="foto-card-img-wrap" onclick="openSimpleLightbox(\'' + escapeHtml(p.url_foto) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">' +
-        '<img src="' + escapeHtml(p.url_foto) + '" alt="Foto Aset ' + (i+1) + '" onerror="this.src=\'https://via.placeholder.com/300x200?text=Gambar+Error\'">' +
+      '<div class="foto-card-img-wrap" onclick="openSimpleLightbox(\'' + escapeHtml(displaySrc) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">' +
+        '<img src="' + escapeHtml(displaySrc) + '" alt="Foto Aset ' + (i+1) + '" data-fallback="' + escapeHtml(fallbackSrc) + '" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;}">' +
         (badgeText ? '<span class="foto-card-status-badge ' + badgeClass + '">' + badgeText + '</span>' : '') +
       '</div>' +
       '<div class="foto-card-body">' +
@@ -1084,7 +1087,7 @@ function renderPhotoCardsGrid(photos, gridEl) {
           '<span>' + escapeHtml(tagText) + ' ' + escapeHtml(coordText) + '</span>' +
         '</div>' +
         '<div class="foto-card-actions">' +
-          '<button class="btn-foto-action" onclick="openSimpleLightbox(\'' + escapeHtml(p.url_foto) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">🔍 Lihat Full</button>' +
+          '<button class="btn-foto-action" onclick="openSimpleLightbox(\'' + escapeHtml(displaySrc) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">🔍 Lihat Full</button>' +
           ((isAdmin() && !isTemp && !isUploading) ? '<button class="btn-foto-action delete" onclick="handleDeletePhotoFromCard(\'' + p.id + '\')">🗑️ Hapus</button>' : '') +
         '</div>' +
       '</div>' +
@@ -1118,17 +1121,22 @@ async function startSequentialUpload(files) {
   var total = files.length;
   if (!_fotoModalState.photos) _fotoModalState.photos = [];
 
-  // Step 1: Pre-render INSTANT LOCAL PREVIEW cards into UI immediately!
+  // Step 1: Compress & create instant permanent Base64 preview items
   var newDraftItems = [];
   for (let i = 0; i < total; i++) {
     var file = files[i];
     var tempId = 'temp_' + Date.now() + '_' + i;
-    var previewUrl = URL.createObjectURL(file);
+    
+    // Compress upfront for permanent lightweight base64 preview
+    var base64 = await compressImageToBase64(file, 800);
+    var previewUrl = base64 || '';
 
     var draftPhotoObj = {
       id: tempId,
       file: file,
       asset_id: assetId,
+      base64: base64,
+      previewUrl: previewUrl,
       url_foto: previewUrl,
       status: 'uploading',
       lat: '',
@@ -1143,14 +1151,14 @@ async function startSequentialUpload(files) {
   _fotoModalState.photos = [...newDraftItems, ..._fotoModalState.photos];
   renderFotoModalBodyFromState();
 
-  // Step 2: Compress & Upload each photo in background
+  // Step 2: Upload each photo in background to server
   let successCount = 0;
   for (let i = 0; i < newDraftItems.length; i++) {
     var item = newDraftItems[i];
     var file = item.file;
 
     try {
-      var base64 = await compressImageToBase64(file, 800);
+      var base64 = item.base64 || await compressImageToBase64(file, 800);
       if (!base64) throw new Error('Gagal kompresi foto');
 
       var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
@@ -1177,6 +1185,7 @@ async function startSequentialUpload(files) {
         successCount++;
         item.status = 'success';
         if (res.id) item.id = res.id;
+        // Only override url_foto if res.url_foto is non-empty
         if (res.url_foto) item.url_foto = res.url_foto;
       } else {
         item.status = 'error';
@@ -1188,6 +1197,9 @@ async function startSequentialUpload(files) {
 
     renderFotoModalBodyFromState();
   }
+
+  showToast('✓ ' + successCount + ' dari ' + total + ' foto berhasil diunggah');
+}
 
   showToast('✓ ' + successCount + ' dari ' + total + ' foto berhasil diunggah');
 }
