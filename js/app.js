@@ -1201,9 +1201,6 @@ async function startSequentialUpload(files) {
   showToast('✓ ' + successCount + ' dari ' + total + ' foto berhasil diunggah');
 }
 
-  showToast('✓ ' + successCount + ' dari ' + total + ' foto berhasil diunggah');
-}
-
 // ============================================================
 // LIGHTBOX
 // // Lightbox functions removed.
