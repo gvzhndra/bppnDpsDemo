@@ -1017,30 +1017,6 @@ async function loadAndRenderFotoModal(assetId) {
 
   var photos = await fetchPhotos(assetId);
   
-  // --- INJEKSI FOTO DUMMY UNTUK TESTING LAYOUT ---
-  if (!photos || photos.length === 0) {
-    photos = [
-      {
-        id: 'dummy-1',
-        asset_id: assetId,
-        url_foto: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        tanggal: '07 Agu 2026',
-        lat: '-8.650000',
-        lng: '115.216667',
-        sumber_tag: 'Satelit Dummy'
-      },
-      {
-        id: 'dummy-2',
-        asset_id: assetId,
-        url_foto: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        tanggal: '07 Agu 2026',
-        lat: '',
-        lng: '',
-        sumber_tag: 'Kamera HP Dummy'
-      }
-    ];
-  }
-  // ----------------------------------------------
 
   _fotoModalState.photos = photos;
   renderFotoModalBodyFromState();
@@ -1055,7 +1031,11 @@ function renderFotoModalBodyFromState() {
   if (skeleton) skeleton.style.display = 'none';
 
   if (!photos.length) {
-    if (emptyState) emptyState.style.display = 'flex';
+    if (emptyState) {
+      emptyState.style.display = 'flex';
+      var text = _fotoModalState.assetId ? 'Belum ada foto untuk aset ini.' : 'Pilih aset terlebih dahulu untuk melihat foto lapangan.';
+      emptyState.innerHTML = '<span class="empty-icon">📷</span><p>' + text + '</p>';
+    }
     if (carousel) carousel.style.display = 'none';
     return;
   }
