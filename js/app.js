@@ -961,7 +961,6 @@ var _fotoModalState = { assetId: null, assetName: '', photos: [], currentIdx: 0 
 async function openFotoModal(assetId, assetName) {
   _fotoModalState.assetId = assetId;
   _fotoModalState.assetName = assetName;
-  clearFotoDraftArea();
 
   var drawer = document.getElementById('fotoDrawer');
   var titleEl = document.getElementById('fotoModalTitle');
@@ -1258,7 +1257,6 @@ function initFotoModal() {
   var drawer = document.getElementById('fotoDrawer');
   function closeFotoModal() {
     if (drawer) drawer.classList.remove('open');
-    clearFotoDraftArea();
     _fotoModalState.assetId = null;
     _fotoModalState.photos = [];
     updateToggleButtons();
@@ -1333,11 +1331,7 @@ function initFotoModal() {
     if (files && files.length && _fotoModalState.assetId) addDraftFiles(files);
   });
 
-  // Event handlers untuk Draft Foto Area
-  var btnClearDraft = document.getElementById('btnClearDraft');
-  var btnSaveDraft = document.getElementById('btnSaveDraft');
-  if (btnClearDraft) btnClearDraft.addEventListener('click', clearFotoDraftArea);
-  if (btnSaveDraft) btnSaveDraft.addEventListener('click', saveFotoDrafts);
+  // Event handlers untuk Draft Foto Area (Sudah dihapus diganti modal progress)
 
   // Lightbox navigasi
   var lbClose = document.getElementById('lightboxClose');
