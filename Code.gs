@@ -438,12 +438,12 @@ function doPost(e) {
     }
 
     if (action === 'addPhoto') {
-      requireAdmin_(body.token);
+      requireSession_(body.token);
       return jsonResponse_(addPhotoEntry_(body.entry));
     }
 
     if (action === 'addPhotoBatch') {
-      requireAdmin_(body.token);
+      requireSession_(body.token);
       return jsonResponse_(addPhotoBatchEntries_(body.entries));
     }
 
@@ -632,13 +632,14 @@ function addPhotoEntry_(entry) {
   const id = 'F' + new Date().getTime() + Math.floor(Math.random() * 1000);
   const tanggal = formatDate_(new Date());
   const rowValues = headers.map(function (h) {
-    if (h === 'id') return id;
-    if (h === 'asset_id') return entry.asset_id;
-    if (h === 'url_foto') return photoUrl;
-    if (h === 'lat') return entry.lat !== undefined ? entry.lat : '';
-    if (h === 'lng') return entry.lng !== undefined ? entry.lng : '';
-    if (h === 'sumber_tag') return entry.sumber_tag || '';
-    if (h === 'tanggal') return tanggal;
+    const hNorm = String(h || '').trim().toLowerCase();
+    if (hNorm === 'id') return id;
+    if (hNorm === 'asset_id' || hNorm === 'assetid' || hNorm === 'asset_id') return entry.asset_id;
+    if (hNorm === 'url_foto' || hNorm === 'url' || hNorm === 'foto_url' || hNorm === 'foto') return photoUrl;
+    if (hNorm === 'lat' || hNorm === 'latitude') return entry.lat !== undefined ? entry.lat : '';
+    if (hNorm === 'lng' || hNorm === 'longitude') return entry.lng !== undefined ? entry.lng : '';
+    if (hNorm === 'sumber_tag' || hNorm === 'sumber') return entry.sumber_tag || '';
+    if (hNorm === 'tanggal' || hNorm === 'date') return tanggal;
     return '';
   });
   sheet.appendRow(rowValues);
@@ -683,6 +684,12 @@ function deletePhotoEntry_(id) {
 function generatePasswordHash() {
   const PLAIN_PASSWORD = 'GANTI_INI';
   Logger.log(hashPassword_(PLAIN_PASSWORD));
+}
+
+function testAuthorizeDrivePermissions() {
+  const folders = DriveApp.getFoldersByName("Foto_Aset_BPPN_Demo");
+  let folder = folders.hasNext() ? folders.next() : DriveApp.createFolder("Foto_Aset_BPPN_Demo");
+  Logger.log("Izin Drive Berhasil! Folder ID: " + folder.getId());
 }
 
 function exportData_(username) {

@@ -1099,7 +1099,13 @@ function updateCarouselView() {
         e.stopPropagation();
         if (!confirm('Hapus foto ini?')) return;
         var ok = await deletePhoto(p.id);
-        if (ok) await loadAndRenderFotoModal(_fotoModalState.assetId);
+        if (ok) {
+          _fotoModalState.photos = (_fotoModalState.photos || []).filter(function(x) { return x.id !== p.id; });
+          if (_fotoModalState.currentIdx >= _fotoModalState.photos.length) {
+            _fotoModalState.currentIdx = Math.max(0, _fotoModalState.photos.length - 1);
+          }
+          renderFotoModalBodyFromState();
+        }
       };
     } else {
       delBtn.style.display = 'none';
@@ -1200,6 +1206,18 @@ async function startSequentialUpload(files) {
           statusEl.textContent = 'Berhasil';
           statusEl.classList.add('success');
         }
+        var newPhoto = {
+          id: res.id || ('F' + Date.now()),
+          asset_id: assetId,
+          url_foto: res.url_foto || '',
+          lat: lat,
+          lng: lng,
+          sumber_tag: sumber_tag,
+          tanggal: 'Hari ini'
+        };
+        if (!_fotoModalState.photos) _fotoModalState.photos = [];
+        _fotoModalState.photos.unshift(newPhoto);
+        renderFotoModalBodyFromState();
       } else {
         if (statusEl) {
           statusEl.textContent = 'Gagal';
