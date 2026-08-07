@@ -1116,97 +1116,59 @@ function updateCarouselView() {
 }
 
 // ============================================================
-// IN-UI DRAFT PREVIEW & BATCH SAVE FOTO LAPANGAN
+// IN-UI SEQUENTIAL UPLOAD FOTO LAPANGAN (BMN IDLE STYLE)
 // ============================================================
-var _pendingUploadFiles = [];
-
-function addDraftFiles(files) {
-  if (!files || !files.length) return;
-  var newFiles = Array.from(files);
-  _pendingUploadFiles = _pendingUploadFiles.concat(newFiles);
-  renderFotoDraftArea();
+async function addDraftFiles(files) {
+  if (!files || !files.length || !_fotoModalState.assetId) return;
+  startSequentialUpload(files);
 }
 
-function clearFotoDraftArea() {
-  _pendingUploadFiles = [];
-  var container = document.getElementById('fotoDraftContainer');
-  var progressEl = document.getElementById('fotoUploadProgress');
-  if (container) container.style.display = 'none';
-  if (progressEl) progressEl.style.display = 'none';
-}
-
-function renderFotoDraftArea() {
-  var container = document.getElementById('fotoDraftContainer');
-  var titleEl = document.getElementById('fotoDraftTitle');
-  var gridEl = document.getElementById('fotoDraftGrid');
-  var saveBtn = document.getElementById('btnSaveDraft');
-  var progressEl = document.getElementById('fotoUploadProgress');
-
-  if (!container || !_pendingUploadFiles.length) {
-    clearFotoDraftArea();
-    return;
-  }
-
-  container.style.display = 'flex';
-  if (progressEl) progressEl.style.display = 'none';
-  if (saveBtn) {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '💾 Simpan ' + _pendingUploadFiles.length + ' Foto ke Server';
-  }
-
-  if (titleEl) {
-    titleEl.textContent = '📸 ' + _pendingUploadFiles.length + ' Foto Siap Disimpan (Draft)';
-  }
-
-  if (gridEl) {
-    gridEl.innerHTML = _pendingUploadFiles.map(function(file, idx) {
-      var tempUrl = URL.createObjectURL(file);
-      return '<div class="foto-draft-item" data-idx="' + idx + '">' +
-        '<img src="' + tempUrl + '" alt="Draft preview">' +
-        '<button class="foto-draft-remove" data-idx="' + idx + '" title="Hapus foto ini dari draft">✕</button>' +
-        '</div>';
-    }).join('');
-
-    gridEl.querySelectorAll('.foto-draft-remove').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var idx = parseInt(btn.dataset.idx, 10);
-        _pendingUploadFiles.splice(idx, 1);
-        renderFotoDraftArea();
-      });
-    });
-  }
-}
-
-async function saveFotoDrafts() {
-  if (!_pendingUploadFiles.length || !_fotoModalState.assetId) return;
+async function startSequentialUpload(files) {
   var assetId = _fotoModalState.assetId;
   var a = features.find(function(f) { return f.id === assetId; });
   if (!a) { alert('Aset tidak ditemukan'); return; }
 
-  var saveBtn = document.getElementById('btnSaveDraft');
-  var progressEl = document.getElementById('fotoUploadProgress');
-  var fillEl = document.getElementById('fotoProgressBarFill');
-  var textEl = document.getElementById('fotoProgressText');
+  var modal = document.getElementById('uploadProgressModal');
+  var fillEl = document.getElementById('uploadProgressBarFill');
+  var textEl = document.getElementById('uploadProgressText');
+  var listEl = document.getElementById('uploadItemsList');
+  var cancelBtn = document.getElementById('btnCancelUpload');
+  var descEl = document.getElementById('uploadProgressDesc');
 
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '⏳ Memproses foto...';
+  if (modal) modal.style.display = 'flex';
+  if (cancelBtn) {
+    cancelBtn.style.display = 'none';
+    cancelBtn.onclick = function() {
+      modal.style.display = 'none';
+      loadAndRenderFotoModal(assetId);
+    };
   }
-  if (progressEl) progressEl.style.display = 'block';
+  
+  var total = files.length;
+  listEl.innerHTML = Array.from(files).map((f, i) => `
+    <div class="upload-item" id="uploadItem_${i}">
+      <span class="upload-item-name">${escapeHtml(f.name || 'Foto '+(i+1))}</span>
+      <span class="upload-item-status">Menunggu...</span>
+    </div>
+  `).join('');
 
-  var total = _pendingUploadFiles.length;
-  var preparedEntries = [];
-  var tempPhotoObjects = [];
+  let successCount = 0;
+  
+  for (let i = 0; i < total; i++) {
+    var file = files[i];
+    var itemEl = document.getElementById('uploadItem_' + i);
+    var statusEl = itemEl ? itemEl.querySelector('.upload-item-status') : null;
 
-  // Step 1: Compress all selected photos locally
-  for (var i = 0; i < total; i++) {
-    var file = _pendingUploadFiles[i];
-    var pct = Math.round(((i + 1) / total) * 50);
-    if (fillEl) fillEl.style.width = pct + '%';
-    if (textEl) textEl.textContent = 'Mengompres foto ' + (i + 1) + ' dari ' + total + '...';
+    if (statusEl) {
+      statusEl.textContent = 'Memproses...';
+      statusEl.className = 'upload-item-status'; // reset classes
+    }
+    descEl.textContent = 'Mengunggah foto ' + (i+1) + ' dari ' + total;
+    fillEl.style.width = Math.round((i / total) * 100) + '%';
+    textEl.textContent = i + ' / ' + total + ' Selesai';
 
     try {
+      // Compress
       var base64 = await compressImageToBase64(file, 1024);
       var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
       var exifGps = await getExifLocation(file);
@@ -1223,68 +1185,48 @@ async function saveFotoDrafts() {
       }
 
       var entry = { asset_id: assetId, base64: base64, mimeType: file.type || 'image/jpeg', lat: lat, lng: lng, sumber_tag: sumber_tag };
-      preparedEntries.push(entry);
-
-      var tempObj = {
-        id: 'temp_' + Date.now() + '_' + i,
-        asset_id: assetId,
-        url_foto: base64.startsWith('data:') ? base64 : 'data:image/jpeg;base64,' + base64,
-        lat: lat, lng: lng, sumber_tag: sumber_tag,
-        tanggal: new Date().toLocaleDateString('id-ID')
-      };
-      tempPhotoObjects.push(tempObj);
-    } catch(err) {
-      console.error('Gagal mengompres foto:', file.name, err);
-    }
-  }
-
-  // Step 2: OPTIMISTIC RENDERING — Render photos INSTANTLY in the UI grid! (Pola BMN Idle)
-  _fotoModalState.photos = tempPhotoObjects.concat(_fotoModalState.photos || []);
-  renderFotoModalBodyFromState();
-  clearFotoDraftArea();
-  showToast('⏳ Mengompres & mengunggah ' + preparedEntries.length + ' foto ke Google Drive...');
-
-  // Step 3: Batch upload to Google Drive & Sheets via Apps Script in background
-  if (fillEl) fillEl.style.width = '75%';
-  if (textEl) textEl.textContent = 'Menyimpan ke Google Drive & Sheets...';
-
-  try {
-    var res = await addPhotoBatch(preparedEntries);
-    if (res && res.ok && res.results) {
-      var successCount = res.results.filter(function(r) { return r && r.ok; }).length;
-      if (successCount > 0) {
-        showToast('✓ ' + successCount + ' foto berhasil disimpan ke Google Drive & Sheets!');
-      }
       
-      var failedCount = res.results.filter(function(r) { return !r || !r.ok; }).length;
-      if (failedCount > 0) {
-        var firstError = res.results.find(function(r) { return !r || !r.ok; });
-        alert('Beberapa foto gagal diunggah: ' + (firstError && firstError.error ? firstError.error : 'Unknown error'));
-      }
-    } else {
-      // Fallback single upload if batch fails
-      var fallbackSuccess = 0;
-      var lastErr = null;
-      for (var k = 0; k < preparedEntries.length; k++) {
-        var singleRes = await addPhoto(preparedEntries[k]);
-        if (singleRes && singleRes.ok) {
-          fallbackSuccess++;
-        } else if (singleRes && singleRes.error) {
-          lastErr = singleRes.error;
+      // Upload satu per satu
+      if (statusEl) statusEl.textContent = 'Mengunggah...';
+      var res = await addPhoto(entry);
+      
+      if (res && res.ok) {
+        successCount++;
+        if (statusEl) {
+          statusEl.textContent = 'Berhasil';
+          statusEl.classList.add('success');
         }
-      }
-      if (fallbackSuccess > 0) {
-        showToast('✓ ' + fallbackSuccess + ' foto berhasil disimpan!');
       } else {
-        alert('Gagal menyimpan foto. ' + (res ? (res.error || '') : '') + (lastErr || 'Periksa koneksi atau izin Apps Script. Pastikan deploy versi baru.'));
+        if (statusEl) {
+          statusEl.textContent = 'Gagal';
+          statusEl.classList.add('error');
+        }
+        console.warn('Gagal upload file ' + i, res);
       }
+    } catch(err) {
+      if (statusEl) {
+        statusEl.textContent = 'Error';
+        statusEl.classList.add('error');
+      }
+      console.error('Error file ' + i, err);
     }
-  } catch(err) {
-    console.warn('Batch upload error:', err);
-  } finally {
-    // Refresh permanent Google Drive URLs from server
-    await loadAndRenderFotoModal(assetId);
+    
+    // Update progress
+    fillEl.style.width = Math.round(((i + 1) / total) * 100) + '%';
+    textEl.textContent = (i + 1) + ' / ' + total + ' Selesai';
   }
+
+  descEl.textContent = 'Selesai mengunggah (' + successCount + '/' + total + ' berhasil)';
+  if (cancelBtn) cancelBtn.style.display = 'block';
+  
+  if (successCount > 0) {
+    showToast('✓ ' + successCount + ' foto berhasil diunggah');
+  } else {
+    alert('Semua unggahan gagal. Pastikan versi Apps Script sudah "New Version" di Manage Deployments.');
+  }
+
+  // Refresh galeri di background agar otomatis update begitu tutup
+  await loadAndRenderFotoModal(assetId);
 }
 
 // ============================================================
