@@ -26,7 +26,7 @@ function showToast(text){
 
 async function apiGet(action, extraParams){
   const params = new URLSearchParams(Object.assign(
-    { action: action || "getAset", token: getToken() || "", _t: Date.now() },
+    { action: action || "getAset", token: getToken() || "" },
     extraParams || {}
   ));
   const res = await fetch(API_URL + "?" + params.toString());
@@ -222,13 +222,26 @@ async function fetchPhotos(assetId){
 }
 async function addPhoto(entry){
   try{
+    // DEBUG: log exactly what's being sent (without dumping the full base64 string)
+    console.log('[DEBUG addPhoto] sending:', JSON.stringify({
+      asset_id: entry.asset_id,
+      mimeType: entry.mimeType,
+      base64_length: entry.base64 ? entry.base64.length : 0,
+      lat: entry.lat,
+      lng: entry.lng,
+      sumber_tag: entry.sumber_tag,
+      token_present: !!getToken(),
+      role: (getSession() || {}).role
+    }));
     const res = await apiSend("addPhoto", { entry });
+    console.log('[DEBUG addPhoto] response:', JSON.stringify(res));
     if(!res.ok){
       if(isSessionError(res.error)){ handleSessionExpired(); return res; }
       console.warn("Gagal menambah foto: " + res.error);
     }
     return res;
   } catch(err){
+    console.error("[DEBUG addPhoto] threw exception:", err);
     console.error("Gagal menambah foto: " + err);
     return { ok: false, error: err.toString() };
   }

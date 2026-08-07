@@ -1168,8 +1168,10 @@ async function startSequentialUpload(files) {
     textEl.textContent = i + ' / ' + total + ' Selesai';
 
     try {
+      console.log('[DEBUG upload] file ' + i + ' start:', file.name, file.type, file.size);
       // Compress
       var base64 = await compressImageToBase64(file, 1024);
+      console.log('[DEBUG upload] file ' + i + ' compressed, base64 length:', base64 ? base64.length : 0);
       var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
       var exifGps = await getExifLocation(file);
 
@@ -1183,12 +1185,14 @@ async function startSequentialUpload(files) {
         if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
         else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
       }
+      console.log('[DEBUG upload] file ' + i + ' geotag resolved:', lat, lng, sumber_tag);
 
       var entry = { asset_id: assetId, base64: base64, mimeType: file.type || 'image/jpeg', lat: lat, lng: lng, sumber_tag: sumber_tag };
       
       // Upload satu per satu
       if (statusEl) statusEl.textContent = 'Mengunggah...';
       var res = await addPhoto(entry);
+      console.log('[DEBUG upload] file ' + i + ' addPhoto result:', JSON.stringify(res));
       
       if (res && res.ok) {
         successCount++;
