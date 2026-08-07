@@ -1681,6 +1681,10 @@ if (btnLogout) {
 // loadFromServer() baru dipanggil setelah promise ini resolve.
 function showAgreementModal() {
   return new Promise(function(resolve) {
+    if (sessionStorage.getItem('bppn_disclaimer_agreed') === 'true') {
+      return resolve();
+    }
+    
     var overlay = document.getElementById('agreementOverlay');
     var btnAgree = document.getElementById('btnAgree');
     var btnDisagree = document.getElementById('btnDisagree');
@@ -1696,6 +1700,7 @@ function showAgreementModal() {
 
     if (btnAgree) {
       btnAgree.onclick = function() {
+        sessionStorage.setItem('bppn_disclaimer_agreed', 'true');
         overlay.style.display = 'none';
         resolve();
       };
