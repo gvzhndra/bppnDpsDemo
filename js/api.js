@@ -209,6 +209,7 @@ async function addPhotoToServer(assetId, photoObj) {
 async function fetchPhotos(assetId){
   try{
     const res = await apiGet("getPhotos", { asset_id: assetId });
+    console.log('[DEBUG fetchPhotos] assetId:', assetId, 'response:', res);
     if(!res.ok){
       if(isSessionError(res.error)){ handleSessionExpired(); return []; }
       alert("Gagal memuat foto: " + res.error);
@@ -216,6 +217,7 @@ async function fetchPhotos(assetId){
     }
     return res.photos || [];
   } catch(err){
+    console.error('[DEBUG fetchPhotos] error:', err);
     alert("Gagal memuat foto: " + err);
     return [];
   }
