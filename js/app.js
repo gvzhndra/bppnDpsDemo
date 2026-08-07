@@ -782,7 +782,7 @@ function renderViewPanel(a) {
     <div class="field" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">
       <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Foto Lapangan</label>
       <button class="btn-open-foto" id="btnOpenFotoModal" data-asset-id="${a.id}" data-asset-name="${escapeHtml(a.props.kode_aset || a.id)}">
-        📸 Lihat &amp; Kelola Foto Lapangan
+        📸 Buka Galeri Foto
       </button>
     </div>
     ${extraSection}
