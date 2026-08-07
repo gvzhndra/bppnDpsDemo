@@ -672,9 +672,35 @@
   .cluster-card.open .cluster-icon{transform:rotate(90deg);}
   .cluster-metrics{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-mut);}
   .cluster-metrics strong{color:var(--text);}
-  .cluster-details-wrap{display:none;padding:12px 16px;border-top:1px solid var(--border);background:#fff;}
+  .cluster-details-wrap{display:none;padding:12px 16px;border-top:1px solid var(--border);background:#fff;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .cluster-card.open .cluster-details-wrap{display:block;}
   .cluster-badge{background:#E2E8F0;color:#334155;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;}
+
+  /* Empty state modal foto yang sejajar dan rapi */
+  .foto-modal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 20px;
+    text-align: center;
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 12px;
+    margin: 12px 0;
+  }
+  .foto-modal-empty .empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+    display: block;
+    line-height: 1;
+  }
+  .foto-modal-empty p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748B;
+  }
 
   @media (max-width: 820px){
     header{flex-direction:row;align-items:flex-start;justify-content:space-between;flex-wrap:nowrap;padding:10px 14px;}

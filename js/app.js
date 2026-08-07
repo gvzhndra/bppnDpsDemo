@@ -890,40 +890,111 @@ function closeSimpleLightbox() {
   if (modal) modal.style.display = 'none';
 }
 
-// Pembaca Geotag EXIF GPS dari JPEG File
-async function getExifLocation(file) {
+function isValidIndonesiaGps(lat, lng) {
+  if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) return false;
+  if (Math.abs(lat) < 1.5 && Math.abs(lng) < 1.5) return false;
+  if (lat < -12 || lat > 8 || lng < 90 || lng > 143) return false;
+  return true;
+}
+
+// Pembaca Geotag & EXIF Date dari JPEG File
+async function getExifData(file) {
   return new Promise((resolve) => {
     if (!file || (!file.type.includes('jpeg') && !file.type.includes('jpg'))) {
-      return resolve(null);
+      return resolve({ location: null, date: null });
     }
     const reader = new FileReader();
     reader.onload = function (e) {
       try {
         const view = new DataView(e.target.result);
-        if (view.getUint16(0, false) !== 0xFFD8) return resolve(null);
+        if (view.getUint16(0, false) !== 0xFFD8) return resolve({ location: null, date: null });
         let length = view.byteLength, offset = 2;
+        let location = null, dateStr = null;
+
         while (offset < length) {
           if ((view.getUint16(offset, false) & 0xFF00) !== 0xFF00) break;
           const marker = view.getUint16(offset, false);
           if (marker === 0xFFE1) {
-            const littleEndian = view.getUint16(offset + 10, false) === 0x4949;
-            const gpsOffset = findGpsOffset(view, offset + 10, littleEndian);
-            if (!gpsOffset) return resolve(null);
-            const lat = readGpsCoord(view, gpsOffset, 2, 1, littleEndian);
-            const lng = readGpsCoord(view, gpsOffset, 4, 3, littleEndian);
-            if (lat !== null && lng !== null) return resolve([lat, lng]);
-            return resolve(null);
+            const tiffOffset = offset + 10;
+            const littleEndian = view.getUint16(tiffOffset, false) === 0x4949;
+
+            // Extract EXIF Date (Tag 0x9003 / 0x0132)
+            try {
+              dateStr = readExifDate(view, tiffOffset, littleEndian);
+            } catch(eDate) {}
+
+            // Extract GPS Location
+            const gpsOffset = findGpsOffset(view, tiffOffset, littleEndian);
+            if (gpsOffset) {
+              const lat = readGpsCoord(view, gpsOffset, 2, 1, littleEndian);
+              const lng = readGpsCoord(view, gpsOffset, 4, 3, littleEndian);
+              if (isValidIndonesiaGps(lat, lng)) {
+                location = [lat, lng];
+              }
+            }
+            return resolve({ location: location, date: dateStr });
           }
           offset += 2 + view.getUint16(offset + 2, false);
         }
-        resolve(null);
+        resolve({ location: null, date: null });
       } catch (err) {
-        resolve(null);
+        resolve({ location: null, date: null });
       }
     };
-    reader.onerror = () => resolve(null);
+    reader.onerror = () => resolve({ location: null, date: null });
     reader.readAsArrayBuffer(file.slice(0, 128 * 1024));
   });
+}
+
+function readExifDate(view, tiffOffset, littleEndian) {
+  const dirOffset = view.getUint32(tiffOffset + 4, littleEndian);
+  const entries = view.getUint16(tiffOffset + dirOffset, littleEndian);
+  let exifSubOffset = null, dateRaw = null;
+
+  for (let i = 0; i < entries; i++) {
+    const entryOffset = tiffOffset + dirOffset + 2 + i * 12;
+    const tag = view.getUint16(entryOffset, littleEndian);
+    if (tag === 0x8769) {
+      exifSubOffset = tiffOffset + view.getUint32(entryOffset + 8, littleEndian);
+    } else if (tag === 0x0132) {
+      dateRaw = readAsciiString(view, tiffOffset + view.getUint32(entryOffset + 8, littleEndian), 19);
+    }
+  }
+
+  if (exifSubOffset) {
+    const subEntries = view.getUint16(exifSubOffset, littleEndian);
+    for (let j = 0; j < subEntries; j++) {
+      const subEntryOffset = exifSubOffset + 2 + j * 12;
+      const tag = view.getUint16(subEntryOffset, littleEndian);
+      if (tag === 0x9003) {
+        var valOffset = tiffOffset + view.getUint32(subEntryOffset + 8, littleEndian);
+        dateRaw = readAsciiString(view, valOffset, 19);
+        break;
+      }
+    }
+  }
+
+  if (dateRaw && dateRaw.length >= 10) {
+    var parts = dateRaw.split(' ')[0].split(':');
+    if (parts.length === 3) {
+      return parts[0] + '-' + parts[1] + '-' + parts[2];
+    }
+  }
+  return null;
+}
+
+function readAsciiString(view, offset, len) {
+  try {
+    let str = '';
+    for (let i = 0; i < len; i++) {
+      let charCode = view.getUint8(offset + i);
+      if (charCode === 0) break;
+      str += String.fromCharCode(charCode);
+    }
+    return str;
+  } catch(e) {
+    return null;
+  }
 }
 
 function findGpsOffset(view, tiffOffset, littleEndian) {
@@ -1168,16 +1239,24 @@ async function startSequentialUpload(files) {
       if (!base64) throw new Error('Gagal kompresi foto');
 
       var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
-      var exifGps = await getExifLocation(file);
-      if (exifGps) {
-        lat = exifGps[0]; lng = exifGps[1]; sumber_tag = 'exif_foto';
+      var exifInfo = await getExifData(file);
+      
+      if (exifInfo && exifInfo.date) {
+        item.tanggal = exifInfo.date;
+      }
+      
+      if (exifInfo && exifInfo.location) {
+        lat = exifInfo.location[0]; lng = exifInfo.location[1]; sumber_tag = 'exif_foto';
       } else if (a.geomType === 'polygon' && isValidPolygonCoords(a.coords)) {
         var c = computeCentroid(a.coords);
         lat = c[0]; lng = c[1]; sumber_tag = 'centroid';
       } else {
         var gps = await getDeviceLocation();
-        if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
-        else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
+        if (gps && isValidIndonesiaGps(gps[0], gps[1])) {
+          lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp';
+        } else if (isValidPoint(a.point)) {
+          lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset';
+        }
       }
 
       item.lat = lat;
