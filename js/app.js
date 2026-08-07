@@ -970,11 +970,14 @@ async function openFotoModal(assetId, assetName) {
   if (titleEl) titleEl.textContent = 'Foto Lapangan';
   if (subtitleEl) subtitleEl.textContent = 'Aset: ' + assetName;
 
-  // Tampilkan skeleton sementara loading
-  if (body) {
-    body.innerHTML = '<div class="foto-modal-grid">' +
-      Array(8).fill('<div class="foto-skeleton"></div>').join('') + '</div>';
-  }
+  var carousel = document.getElementById('fotoCarousel');
+  var emptyState = document.getElementById('fotoEmptyState');
+  var skeleton = document.getElementById('fotoSkeleton');
+
+  // Tampilkan skeleton sementara loading, sembunyikan yang lain
+  if (carousel) carousel.style.display = 'none';
+  if (emptyState) emptyState.style.display = 'none';
+  if (skeleton) skeleton.style.display = 'grid';
 
   if (drawer) {
     drawer.classList.add('open');
@@ -1046,10 +1049,13 @@ async function loadAndRenderFotoModal(assetId) {
 function renderFotoModalBodyFromState() {
   var emptyState = document.getElementById('fotoEmptyState');
   var carousel = document.getElementById('fotoCarousel');
+  var skeleton = document.getElementById('fotoSkeleton');
   var photos = _fotoModalState.photos || [];
 
+  if (skeleton) skeleton.style.display = 'none';
+
   if (!photos.length) {
-    if (emptyState) emptyState.style.display = 'block';
+    if (emptyState) emptyState.style.display = 'flex';
     if (carousel) carousel.style.display = 'none';
     return;
   }
