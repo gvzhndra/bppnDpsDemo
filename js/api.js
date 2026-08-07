@@ -191,6 +191,21 @@ async function deleteHistoryEntry(id){
 // ============================
 // Foto & Geotagging per aset
 // ============================
+async function addPhotoToServer(assetId, photoObj) {
+  // photoObj: { base64, filename, mimeType, sumber_tag, lat, lng }
+  return await apiSend("addPhoto", {
+    entry: {
+      asset_id: assetId,
+      base64: photoObj.base64,
+      filename: photoObj.filename,
+      mimeType: photoObj.mimeType,
+      sumber_tag: photoObj.sumber_tag,
+      lat: photoObj.lat,
+      lng: photoObj.lng
+    }
+  });
+}
+
 async function fetchPhotos(assetId){
   try{
     const res = await apiGet("getPhotos", { asset_id: assetId });

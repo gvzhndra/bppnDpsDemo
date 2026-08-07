@@ -1239,14 +1239,14 @@ async function startSequentialUpload(files) {
   descEl.textContent = 'Selesai mengunggah (' + successCount + '/' + total + ' berhasil)';
   if (cancelBtn) cancelBtn.style.display = 'block';
   
-  if (successCount > 0) {
-    showToast('✓ ' + successCount + ' foto berhasil diunggah');
-  } else {
-    alert('Semua unggahan gagal. Pastikan versi Apps Script sudah "New Version" di Manage Deployments.');
-  }
-
-  // Refresh galeri di background agar otomatis update begitu tutup
+  // Refresh galeri di background
   await loadAndRenderFotoModal(assetId);
+
+  if (successCount > 0) {
+    alert('Sukses! ' + successCount + ' foto berhasil diupload ke Google Drive dan Google Sheet.');
+  } else {
+    alert('Gagal! Semua unggahan gagal. Pastikan versi Apps Script sudah "New Version".');
+  }
 }
 
 // ============================================================
