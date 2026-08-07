@@ -198,6 +198,161 @@
   .carousel-nav.prev { left: 8px; }
   .carousel-nav.next { right: 8px; }
   .carousel-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Photo Cards Grid System */
+  .foto-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    width: 100%;
+  }
+  .foto-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .foto-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+  }
+  .foto-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    background: #F8FAFC;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .foto-card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  .foto-card-img-wrap:hover img {
+    transform: scale(1.05);
+  }
+  .foto-card-status-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+  }
+  .foto-card-status-badge.uploading {
+    background: rgba(234, 179, 8, 0.9);
+    color: #fff;
+    animation: pulse 1.5s infinite;
+  }
+  .foto-card-status-badge.success {
+    background: rgba(22, 163, 74, 0.9);
+    color: #fff;
+  }
+  .foto-card-status-badge.error {
+    background: rgba(220, 38, 38, 0.9);
+    color: #fff;
+  }
+  .foto-card-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    justify-content: space-between;
+  }
+  .foto-card-meta {
+    font-size: 11px;
+    color: #64748B;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .foto-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #F1F5F9;
+  }
+  .btn-foto-action {
+    background: #F1F5F9;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #334155;
+    transition: background 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-foto-action:hover {
+    background: #E2E8F0;
+  }
+  .btn-foto-action.delete {
+    color: #DC2626;
+  }
+  .btn-foto-action.delete:hover {
+    background: #FEE2E2;
+  }
+
+  /* Simple Fullscreen Lightbox Modal */
+  .simple-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.92);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+  }
+  .simple-lightbox-box {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .simple-lightbox-box img {
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    object-fit: contain;
+  }
+  .simple-lightbox-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .simple-lightbox-close:hover {
+    background: rgba(255,255,255,0.4);
+  }
   
   .carousel-delete {
     position: absolute; top: 8px; right: 8px;

@@ -838,14 +838,14 @@ function renderViewPanel(a) {
   loadAndRenderHistory(a.id);
 }
 
-// Kompresi foto lokal ke canvas JPEG base64
-// maxDim=1024, quality=0.75 → ramah storage (~100-250KB), tetap jelas
-function compressImageToBase64(file, maxDim = 1024) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
+// Kompresi foto lokal ke canvas JPEG base64 (Cepat, Hemat RAM, Bulletproof)
+function compressImageToBase64(file, maxDim = 800) {
+  return new Promise((resolve) => {
+    try {
+      const objectUrl = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
         let w = img.width, h = img.height;
         if (w > maxDim || h > maxDim) {
           if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
@@ -855,14 +855,33 @@ function compressImageToBase64(file, maxDim = 1024) {
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.75));
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+      img.src = objectUrl;
+    } catch(e) {
+      resolve(null);
+    }
   });
+}
+
+// Helper Simple Lightbox
+function openSimpleLightbox(url, caption) {
+  var modal = document.getElementById('simpleLightboxModal');
+  var img = document.getElementById('simpleLightboxImg');
+  var cap = document.getElementById('simpleLightboxCaption');
+  if (modal && img) {
+    img.src = url;
+    if (cap) cap.textContent = caption || '';
+    modal.style.display = 'flex';
+  }
+}
+function closeSimpleLightbox() {
+  var modal = document.getElementById('simpleLightboxModal');
+  if (modal) modal.style.display = 'none';
 }
 
 // Pembaca Geotag EXIF GPS dari JPEG File
@@ -955,7 +974,7 @@ function getDeviceLocation() {
 // ============================================================
 // GALERI FOTO MODAL — state terpusat
 // ============================================================
-var _fotoModalState = { assetId: null, assetName: '', photos: [], currentIdx: 0 };
+var _fotoModalState = { assetId: null, assetName: '', photos: [] };
 
 // Buka modal foto untuk sebuah aset
 async function openFotoModal(assetId, assetName) {
@@ -965,17 +984,14 @@ async function openFotoModal(assetId, assetName) {
   var drawer = document.getElementById('fotoDrawer');
   var titleEl = document.getElementById('fotoModalTitle');
   var subtitleEl = document.getElementById('fotoModalSubtitle');
-  var body = document.getElementById('fotoModalBody');
+  var grid = document.getElementById('fotoCardsGrid');
+  var emptyState = document.getElementById('fotoEmptyState');
+  var skeleton = document.getElementById('fotoSkeleton');
 
   if (titleEl) titleEl.textContent = 'Foto Lapangan';
   if (subtitleEl) subtitleEl.textContent = 'Aset: ' + assetName;
 
-  var carousel = document.getElementById('fotoCarousel');
-  var emptyState = document.getElementById('fotoEmptyState');
-  var skeleton = document.getElementById('fotoSkeleton');
-
-  // Tampilkan skeleton sementara loading, sembunyikan yang lain
-  if (carousel) carousel.style.display = 'none';
+  if (grid) grid.style.display = 'none';
   if (emptyState) emptyState.style.display = 'none';
   if (skeleton) skeleton.style.display = 'grid';
 
@@ -984,14 +1000,10 @@ async function openFotoModal(assetId, assetName) {
     updateToggleButtons();
   }
 
-  // Tambah tombol kamera hanya di mobile
   _injectKameraBtn();
-
-  // Muat foto
   await loadAndRenderFotoModal(assetId);
 }
 
-// Inject tombol kamera hanya saat mobile/tablet
 function _injectKameraBtn() {
   var actionsEl = document.querySelector('.foto-modal-actions');
   if (!actionsEl) return;
@@ -1002,7 +1014,7 @@ function _injectKameraBtn() {
     var btn = document.createElement('button');
     btn.className = 'btn-kamera-hp';
     btn.id = 'btnKameraHP';
-    btn.innerHTML = '\ud83d\udcf7 Foto dengan Kamera';
+    btn.innerHTML = '📷 Foto dengan Kamera';
     btn.addEventListener('click', function() {
       document.getElementById('fotoInputKamera').click();
     });
@@ -1016,15 +1028,13 @@ async function loadAndRenderFotoModal(assetId) {
   if (!body) return;
 
   var photos = await fetchPhotos(assetId);
-  
-
   _fotoModalState.photos = photos;
   renderFotoModalBodyFromState();
 }
 
 function renderFotoModalBodyFromState() {
   var emptyState = document.getElementById('fotoEmptyState');
-  var carousel = document.getElementById('fotoCarousel');
+  var grid = document.getElementById('fotoCardsGrid');
   var skeleton = document.getElementById('fotoSkeleton');
   var photos = _fotoModalState.photos || [];
 
@@ -1036,93 +1046,63 @@ function renderFotoModalBodyFromState() {
       var text = _fotoModalState.assetId ? 'Belum ada foto untuk aset ini.' : 'Pilih aset terlebih dahulu untuk melihat foto lapangan.';
       emptyState.innerHTML = '<span class="empty-icon">📷</span><p>' + text + '</p>';
     }
-    if (carousel) carousel.style.display = 'none';
+    if (grid) grid.style.display = 'none';
     return;
   }
 
   if (emptyState) emptyState.style.display = 'none';
-  if (carousel) carousel.style.display = 'flex';
-
-  _fotoModalState.currentIdx = 0;
-  buildCarouselThumbs();
-  updateCarouselView();
+  if (grid) {
+    grid.style.display = 'grid';
+    renderPhotoCardsGrid(photos, grid);
+  }
 }
 
-function buildCarouselThumbs() {
-  var photos = _fotoModalState.photos || [];
-  var track = document.getElementById('carouselThumbsTrack');
-  if (!track) return;
-  track.innerHTML = photos.map(function(p, i) {
-    return '<img class="carousel-thumb' + (i === _fotoModalState.currentIdx ? ' active' : '') +
-      '" src="' + escapeHtml(p.url_foto) + '" data-idx="' + i + '" alt="Thumb ' + (i+1) + '">';
-  }).join('');
-  
-  track.querySelectorAll('.carousel-thumb').forEach(function(t) {
-    t.addEventListener('click', function() {
-      _fotoModalState.currentIdx = parseInt(t.dataset.idx, 10);
-      updateCarouselView();
-    });
-  });
-}
-
-function updateCarouselView() {
-  var photos = _fotoModalState.photos;
-  var idx = _fotoModalState.currentIdx;
-  var p = photos[idx];
-  if (!p) return;
-
+function renderPhotoCardsGrid(photos, gridEl) {
   var sumberLabel = {
-    exif_foto: '📍 EXIF Foto', centroid: '📍 Titik poligon',
-    gps_hp: '📍 GPS HP', titik_aset: '📍 Titik aset', tidak_diketahui: 'Lokasi ?'
+    exif_foto: '📍 EXIF Foto', centroid: '📍 Titik Poligon',
+    gps_hp: '📍 GPS HP', titik_aset: '📍 Titik Aset', tidak_diketahui: 'Lokasi ?'
   };
 
-  document.getElementById('carouselImg').src = p.url_foto;
-  var metaText = [
-    (idx + 1) + ' / ' + photos.length,
-    escapeHtml(p.tanggal || ''),
-    escapeHtml(sumberLabel[p.sumber_tag] || p.sumber_tag || ''),
-    (p.lat && p.lng) ? '📍 (' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + ')' : ''
-  ].filter(Boolean).join(' · ');
-  document.getElementById('carouselMeta').innerHTML = metaText;
-
-  var prevBtn = document.getElementById('carouselPrev');
-  var nextBtn = document.getElementById('carouselNext');
-  if (prevBtn) prevBtn.disabled = idx === 0;
-  if (nextBtn) nextBtn.disabled = idx === photos.length - 1;
-
-  var delBtn = document.getElementById('carouselDelete');
-  if (delBtn) {
+  gridEl.innerHTML = photos.map(function(p, i) {
+    var isUploading = p.status === 'uploading';
+    var isError = p.status === 'error';
     var isTemp = String(p.id || '').startsWith('temp_');
-    if (isAdmin() && !isTemp) {
-      delBtn.style.display = 'block';
-      delBtn.onclick = async function(e) {
-        e.stopPropagation();
-        if (!confirm('Hapus foto ini?')) return;
-        var ok = await deletePhoto(p.id);
-        if (ok) {
-          _fotoModalState.photos = (_fotoModalState.photos || []).filter(function(x) { return x.id !== p.id; });
-          if (_fotoModalState.currentIdx >= _fotoModalState.photos.length) {
-            _fotoModalState.currentIdx = Math.max(0, _fotoModalState.photos.length - 1);
-          }
-          renderFotoModalBodyFromState();
-        }
-      };
-    } else {
-      delBtn.style.display = 'none';
-    }
-  }
+    var badgeText = isUploading ? '⚡ Mengunggah...' : (isError ? '❌ Gagal' : '');
+    var badgeClass = isUploading ? 'uploading' : (isError ? 'error' : 'success');
 
-  // Update active thumb
-  document.querySelectorAll('.carousel-thumb').forEach(function(t, i) {
-    t.classList.toggle('active', i === idx);
-  });
-  
-  var activeTh = document.querySelector('.carousel-thumb.active');
-  if (activeTh) activeTh.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    var tagText = sumberLabel[p.sumber_tag] || p.sumber_tag || '';
+    var coordText = (p.lat && p.lng) ? '(' + Number(p.lat).toFixed(4) + ', ' + Number(p.lng).toFixed(4) + ')' : '';
+
+    return '<div class="foto-card" id="fotoCard_' + (p.id || i) + '">' +
+      '<div class="foto-card-img-wrap" onclick="openSimpleLightbox(\'' + escapeHtml(p.url_foto) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">' +
+        '<img src="' + escapeHtml(p.url_foto) + '" alt="Foto Aset ' + (i+1) + '" onerror="this.src=\'https://via.placeholder.com/300x200?text=Gambar+Error\'">' +
+        (badgeText ? '<span class="foto-card-status-badge ' + badgeClass + '">' + badgeText + '</span>' : '') +
+      '</div>' +
+      '<div class="foto-card-body">' +
+        '<div class="foto-card-meta">' +
+          '<span style="font-weight:600;color:#334155;">Foto ' + (i+1) + ' · ' + escapeHtml(p.tanggal || 'Baru') + '</span>' +
+          '<span>' + escapeHtml(tagText) + ' ' + escapeHtml(coordText) + '</span>' +
+        '</div>' +
+        '<div class="foto-card-actions">' +
+          '<button class="btn-foto-action" onclick="openSimpleLightbox(\'' + escapeHtml(p.url_foto) + '\', \'' + escapeHtml(p.tanggal || '') + '\')">🔍 Lihat Full</button>' +
+          ((isAdmin() && !isTemp && !isUploading) ? '<button class="btn-foto-action delete" onclick="handleDeletePhotoFromCard(\'' + p.id + '\')">🗑️ Hapus</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function handleDeletePhotoFromCard(photoId) {
+  if (!confirm('Hapus foto ini dari server?')) return;
+  var ok = await deletePhoto(photoId);
+  if (ok) {
+    _fotoModalState.photos = (_fotoModalState.photos || []).filter(function(x) { return x.id !== photoId; });
+    renderFotoModalBodyFromState();
+  }
 }
 
 // ============================================================
-// IN-UI SEQUENTIAL UPLOAD FOTO LAPANGAN (BMN IDLE STYLE)
+// INSTANT PREVIEW MULTIPLE UPLOAD ENGINE
 // ============================================================
 async function addDraftFiles(files) {
   if (!files || !files.length || !_fotoModalState.assetId) return;
@@ -1133,54 +1113,48 @@ async function startSequentialUpload(files) {
   var assetId = _fotoModalState.assetId;
   var a = features.find(function(f) { return f.id === assetId; });
   if (!a) { alert('Aset tidak ditemukan'); return; }
+  if (!files || !files.length) return;
 
-  var modal = document.getElementById('uploadProgressModal');
-  var fillEl = document.getElementById('uploadProgressBarFill');
-  var textEl = document.getElementById('uploadProgressText');
-  var listEl = document.getElementById('uploadItemsList');
-  var cancelBtn = document.getElementById('btnCancelUpload');
-  var descEl = document.getElementById('uploadProgressDesc');
-
-  if (modal) modal.style.display = 'flex';
-  if (cancelBtn) {
-    cancelBtn.style.display = 'none';
-    cancelBtn.onclick = function() {
-      modal.style.display = 'none';
-      loadAndRenderFotoModal(assetId);
-    };
-  }
-  
   var total = files.length;
-  listEl.innerHTML = Array.from(files).map((f, i) => `
-    <div class="upload-item" id="uploadItem_${i}">
-      <span class="upload-item-name">${escapeHtml(f.name || 'Foto '+(i+1))}</span>
-      <span class="upload-item-status">Menunggu...</span>
-    </div>
-  `).join('');
+  if (!_fotoModalState.photos) _fotoModalState.photos = [];
 
-  let successCount = 0;
-  
+  // Step 1: Pre-render INSTANT LOCAL PREVIEW cards into UI immediately!
+  var newDraftItems = [];
   for (let i = 0; i < total; i++) {
     var file = files[i];
-    var itemEl = document.getElementById('uploadItem_' + i);
-    var statusEl = itemEl ? itemEl.querySelector('.upload-item-status') : null;
+    var tempId = 'temp_' + Date.now() + '_' + i;
+    var previewUrl = URL.createObjectURL(file);
 
-    if (statusEl) {
-      statusEl.textContent = 'Memproses...';
-      statusEl.className = 'upload-item-status'; // reset classes
-    }
-    descEl.textContent = 'Mengunggah foto ' + (i+1) + ' dari ' + total;
-    fillEl.style.width = Math.round((i / total) * 100) + '%';
-    textEl.textContent = i + ' / ' + total + ' Selesai';
+    var draftPhotoObj = {
+      id: tempId,
+      file: file,
+      asset_id: assetId,
+      url_foto: previewUrl,
+      status: 'uploading',
+      lat: '',
+      lng: '',
+      sumber_tag: 'proses',
+      tanggal: 'Unggah Baru'
+    };
+    newDraftItems.push(draftPhotoObj);
+  }
+
+  // Prepend new draft items to the front of photos list
+  _fotoModalState.photos = [...newDraftItems, ..._fotoModalState.photos];
+  renderFotoModalBodyFromState();
+
+  // Step 2: Compress & Upload each photo in background
+  let successCount = 0;
+  for (let i = 0; i < newDraftItems.length; i++) {
+    var item = newDraftItems[i];
+    var file = item.file;
 
     try {
-      console.log('[DEBUG upload] file ' + i + ' start:', file.name, file.type, file.size);
-      // Compress
-      var base64 = await compressImageToBase64(file, 1024);
-      console.log('[DEBUG upload] file ' + i + ' compressed, base64 length:', base64 ? base64.length : 0);
+      var base64 = await compressImageToBase64(file, 800);
+      if (!base64) throw new Error('Gagal kompresi foto');
+
       var lat = '', lng = '', sumber_tag = 'tidak_diketahui';
       var exifGps = await getExifLocation(file);
-
       if (exifGps) {
         lat = exifGps[0]; lng = exifGps[1]; sumber_tag = 'exif_foto';
       } else if (a.geomType === 'polygon' && isValidPolygonCoords(a.coords)) {
@@ -1191,64 +1165,31 @@ async function startSequentialUpload(files) {
         if (gps) { lat = gps[0]; lng = gps[1]; sumber_tag = 'gps_hp'; }
         else if (isValidPoint(a.point)) { lat = a.point[0]; lng = a.point[1]; sumber_tag = 'titik_aset'; }
       }
-      console.log('[DEBUG upload] file ' + i + ' geotag resolved:', lat, lng, sumber_tag);
 
-      var entry = { asset_id: assetId, base64: base64, mimeType: file.type || 'image/jpeg', lat: lat, lng: lng, sumber_tag: sumber_tag };
-      
-      // Upload satu per satu
-      if (statusEl) statusEl.textContent = 'Mengunggah...';
+      item.lat = lat;
+      item.lng = lng;
+      item.sumber_tag = sumber_tag;
+
+      var entry = { asset_id: assetId, base64: base64, mimeType: 'image/jpeg', lat: lat, lng: lng, sumber_tag: sumber_tag };
       var res = await addPhoto(entry);
-      console.log('[DEBUG upload] file ' + i + ' addPhoto result:', JSON.stringify(res));
-      
+
       if (res && res.ok) {
         successCount++;
-        if (statusEl) {
-          statusEl.textContent = 'Berhasil';
-          statusEl.classList.add('success');
-        }
-        var newPhoto = {
-          id: res.id || ('F' + Date.now()),
-          asset_id: assetId,
-          url_foto: res.url_foto || '',
-          lat: lat,
-          lng: lng,
-          sumber_tag: sumber_tag,
-          tanggal: 'Hari ini'
-        };
-        if (!_fotoModalState.photos) _fotoModalState.photos = [];
-        _fotoModalState.photos.unshift(newPhoto);
-        renderFotoModalBodyFromState();
+        item.status = 'success';
+        if (res.id) item.id = res.id;
+        if (res.url_foto) item.url_foto = res.url_foto;
       } else {
-        if (statusEl) {
-          statusEl.textContent = 'Gagal';
-          statusEl.classList.add('error');
-        }
-        console.warn('Gagal upload file ' + i, res);
+        item.status = 'error';
       }
     } catch(err) {
-      if (statusEl) {
-        statusEl.textContent = 'Error';
-        statusEl.classList.add('error');
-      }
-      console.error('Error file ' + i, err);
+      console.error('Upload item failed:', err);
+      item.status = 'error';
     }
-    
-    // Update progress
-    fillEl.style.width = Math.round(((i + 1) / total) * 100) + '%';
-    textEl.textContent = (i + 1) + ' / ' + total + ' Selesai';
+
+    renderFotoModalBodyFromState();
   }
 
-  descEl.textContent = 'Selesai mengunggah (' + successCount + '/' + total + ' berhasil)';
-  if (cancelBtn) cancelBtn.style.display = 'block';
-  
-  // Refresh galeri di background
-  await loadAndRenderFotoModal(assetId);
-
-  if (successCount > 0) {
-    alert('Sukses! ' + successCount + ' foto berhasil diupload ke Google Drive dan Google Sheet.');
-  } else {
-    alert('Gagal! Semua unggahan gagal. Pastikan versi Apps Script sudah "New Version".');
-  }
+  showToast('✓ ' + successCount + ' dari ' + total + ' foto berhasil diunggah');
 }
 
 // ============================================================
@@ -1270,6 +1211,14 @@ function initFotoModal() {
     updateToggleButtons();
   }
   if (closeBtn) closeBtn.addEventListener('click', closeFotoModal);
+
+  // Simple Lightbox Close Handlers
+  var lbClose = document.getElementById('btnCloseSimpleLightbox');
+  var lbOverlay = document.getElementById('simpleLightboxModal');
+  if (lbClose) lbClose.addEventListener('click', closeSimpleLightbox);
+  if (lbOverlay) lbOverlay.addEventListener('click', function(e) {
+    if (e.target === lbOverlay) closeSimpleLightbox();
+  });
 
   // Inisialisasi drawer side panel (kanan)
   var closeSideBtn = document.getElementById('btnCloseSidePanel');

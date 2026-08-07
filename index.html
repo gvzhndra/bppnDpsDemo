@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Aset eks BPPN (Demo) — KPKNL Denpasar</title>
-  <script src="js/config.js?v=8.1"></script>
-  <script src="js/auth.js?v=8.1"></script>
+  <script src="js/config.js?v=10"></script>
+  <script src="js/auth.js?v=10"></script>
   <script>guardDashboardPage();</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
@@ -157,28 +157,15 @@
 
       <!-- Area Preview Foto yang Baru Dipilih dihapus, diganti Modal Upload Terpisah -->
       <div class="foto-modal-body" id="fotoModalBody">
-        <!-- Carousel View -->
-        <div class="foto-carousel" id="fotoCarousel" style="display:none;">
-          <div class="carousel-main">
-            <button class="carousel-nav prev" id="carouselPrev">❮</button>
-            <img id="carouselImg" src="" alt="Foto Aset">
-            <button class="carousel-nav next" id="carouselNext">❯</button>
-            <button class="carousel-delete" id="carouselDelete" title="Hapus Foto">🗑️</button>
-          </div>
-          <div class="carousel-meta" id="carouselMeta"></div>
-          <div class="carousel-thumbs-wrap">
-            <div class="carousel-thumbs-track" id="carouselThumbsTrack"></div>
-          </div>
-        </div>
+        <!-- Photo Cards Grid View -->
+        <div class="foto-cards-grid" id="fotoCardsGrid" style="display:none;"></div>
 
         <div class="foto-modal-empty" id="fotoEmptyState">
           <span class="empty-icon">📷</span>
-          <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
+          <p>Belum ada foto untuk aset ini.</p>
         </div>
 
         <div class="foto-modal-grid" id="fotoSkeleton" style="display:none;">
-          <div class="foto-skeleton"></div><div class="foto-skeleton"></div>
-          <div class="foto-skeleton"></div><div class="foto-skeleton"></div>
           <div class="foto-skeleton"></div><div class="foto-skeleton"></div>
           <div class="foto-skeleton"></div><div class="foto-skeleton"></div>
         </div>
@@ -276,9 +263,18 @@
     </div>
   </div>
 
+  <!-- Simple Fullscreen Lightbox Modal -->
+  <div class="simple-lightbox-overlay" id="simpleLightboxModal" style="display:none;">
+    <div class="simple-lightbox-box">
+      <button class="simple-lightbox-close" id="btnCloseSimpleLightbox" title="Tutup">✕</button>
+      <img id="simpleLightboxImg" src="" alt="Preview Foto Full">
+      <div id="simpleLightboxCaption" style="color:#fff; font-size:12px; margin-top:8px; text-align:center;"></div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  <script src="js/api.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/api.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 </body>
 </html>
