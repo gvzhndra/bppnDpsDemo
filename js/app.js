@@ -1201,13 +1201,32 @@ async function saveFotoDrafts() {
     var res = await addPhotoBatch(preparedEntries);
     if (res && res.ok && res.results) {
       var successCount = res.results.filter(function(r) { return r && r.ok; }).length;
-      showToast('✓ ' + successCount + ' foto berhasil disimpan ke Google Drive & Sheets!');
+      if (successCount > 0) {
+        showToast('✓ ' + successCount + ' foto berhasil disimpan ke Google Drive & Sheets!');
+      }
+      
+      var failedCount = res.results.filter(function(r) { return !r || !r.ok; }).length;
+      if (failedCount > 0) {
+        var firstError = res.results.find(function(r) { return !r || !r.ok; });
+        alert('Beberapa foto gagal diunggah: ' + (firstError && firstError.error ? firstError.error : 'Unknown error'));
+      }
     } else {
       // Fallback single upload if batch fails
+      var fallbackSuccess = 0;
+      var lastErr = null;
       for (var k = 0; k < preparedEntries.length; k++) {
-        await addPhoto(preparedEntries[k]);
+        var singleRes = await addPhoto(preparedEntries[k]);
+        if (singleRes && singleRes.ok) {
+          fallbackSuccess++;
+        } else if (singleRes && singleRes.error) {
+          lastErr = singleRes.error;
+        }
       }
-      showToast('✓ ' + preparedEntries.length + ' foto berhasil disimpan!');
+      if (fallbackSuccess > 0) {
+        showToast('✓ ' + fallbackSuccess + ' foto berhasil disimpan!');
+      } else {
+        alert('Gagal menyimpan foto. ' + (res ? (res.error || '') : '') + (lastErr || 'Periksa koneksi atau izin Apps Script. Pastikan deploy versi baru.'));
+      }
     }
   } catch(err) {
     console.warn('Batch upload error:', err);

@@ -209,28 +209,26 @@ async function addPhoto(entry){
   try{
     const res = await apiSend("addPhoto", { entry });
     if(!res.ok){
-      if(isSessionError(res.error)){ handleSessionExpired(); return null; }
+      if(isSessionError(res.error)){ handleSessionExpired(); return res; }
       console.warn("Gagal menambah foto: " + res.error);
-      return null;
     }
     return res;
   } catch(err){
     console.error("Gagal menambah foto: " + err);
-    return null;
+    return { ok: false, error: err.toString() };
   }
 }
 async function addPhotoBatch(entries){
   try{
     const res = await apiSend("addPhotoBatch", { entries });
     if(!res.ok){
-      if(isSessionError(res.error)){ handleSessionExpired(); return null; }
+      if(isSessionError(res.error)){ handleSessionExpired(); return res; }
       console.warn("Gagal menambah batch foto: " + res.error);
-      return null;
     }
     return res;
   } catch(err){
     console.error("Gagal menambah batch foto: " + err);
-    return null;
+    return { ok: false, error: err.toString() };
   }
 }
 async function deletePhoto(id){
