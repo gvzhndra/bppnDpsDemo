@@ -123,6 +123,11 @@
   <div class="main">
     <div id="map"></div>
     
+    <!-- Tombol Toggle Kiri & Kanan (Awalnya disembunyikan) -->
+    <button id="btnToggleLeft" class="floating-toggle floating-left" style="display:none;" title="Buka Galeri Foto">📸</button>
+    <button id="btnToggleRight" class="floating-toggle floating-right" style="display:none;" title="Buka Detail Aset">❮ Detail</button>
+
+    
     <!-- Drawer Kanan: Panel Detail Aset -->
     <div class="drawer-right" id="sidePanel">
       <button class="drawer-close" id="btnCloseSidePanel">✕</button>
@@ -169,7 +174,21 @@
       </div>
 
       <div class="foto-modal-body" id="fotoModalBody">
-        <div class="foto-modal-empty">
+        <!-- Carousel View -->
+        <div class="foto-carousel" id="fotoCarousel" style="display:none;">
+          <div class="carousel-main">
+            <button class="carousel-nav prev" id="carouselPrev">❮</button>
+            <img id="carouselImg" src="" alt="Foto Aset">
+            <button class="carousel-nav next" id="carouselNext">❯</button>
+            <button class="carousel-delete" id="carouselDelete" title="Hapus Foto">🗑️</button>
+          </div>
+          <div class="carousel-meta" id="carouselMeta"></div>
+          <div class="carousel-thumbs-wrap">
+            <div class="carousel-thumbs-track" id="carouselThumbsTrack"></div>
+          </div>
+        </div>
+
+        <div class="foto-modal-empty" id="fotoEmptyState">
           <span class="empty-icon">📷</span>
           <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
         </div>
@@ -246,20 +265,7 @@
 
   <!-- foto-modal-overlay dihapus karena sudah dipindah ke drawer-left -->
 
-  <!-- Lightbox -->
-  <div class="foto-lightbox" id="fotoLightbox">
-    <button class="lightbox-close" id="lightboxClose">✕</button>
-    <div class="lightbox-img-wrap">
-      <button class="lightbox-nav prev" id="lightboxPrev">&#8592;</button>
-      <img id="lightboxImg" src="" alt="Foto lapangan">
-      <button class="lightbox-nav next" id="lightboxNext">&#8594;</button>
-    </div>
-    <div class="lightbox-meta">
-      <div id="lightboxMeta"></div>
-      <div class="lightbox-counter" id="lightboxCounter"></div>
-    </div>
-    <div class="lightbox-thumbs" id="lightboxThumbs"></div>
-  </div>
+  <!-- Lightbox lama dihapus karena digantikan Carousel -->
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>

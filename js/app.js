@@ -679,6 +679,26 @@ function selectAsset(id, mode) {
   if (panel) {
     panel.classList.add('open');
     panel.scrollTo({ top: 0, behavior: 'smooth' });
+    updateToggleButtons();
+  }
+}
+
+function updateToggleButtons() {
+  var drawerLeft = document.getElementById('fotoDrawer');
+  var drawerRight = document.getElementById('sidePanel');
+  var btnToggleLeft = document.getElementById('btnToggleLeft');
+  var btnToggleRight = document.getElementById('btnToggleRight');
+  
+  if (selectedId && drawerRight && !drawerRight.classList.contains('open')) {
+    if (btnToggleRight) btnToggleRight.style.display = 'flex';
+  } else {
+    if (btnToggleRight) btnToggleRight.style.display = 'none';
+  }
+
+  if (selectedId && drawerLeft && !drawerLeft.classList.contains('open')) {
+    if (btnToggleLeft) btnToggleLeft.style.display = 'flex';
+  } else {
+    if (btnToggleLeft) btnToggleLeft.style.display = 'none';
   }
 }
 
@@ -968,7 +988,10 @@ async function openFotoModal(assetId, assetName) {
       Array(8).fill('<div class="foto-skeleton"></div>').join('') + '</div>';
   }
 
-  if (drawer) drawer.classList.add('open');
+  if (drawer) {
+    drawer.classList.add('open');
+    updateToggleButtons();
+  }
 
   // Tambah tombol kamera hanya di mobile
   _injectKameraBtn();
@@ -1007,63 +1030,89 @@ async function loadAndRenderFotoModal(assetId) {
 }
 
 function renderFotoModalBodyFromState() {
-  var body = document.getElementById('fotoModalBody');
-  if (!body) return;
-
+  var emptyState = document.getElementById('fotoEmptyState');
+  var carousel = document.getElementById('fotoCarousel');
   var photos = _fotoModalState.photos || [];
 
   if (!photos.length) {
-    body.innerHTML = '<div class="foto-modal-empty">' +
-      '<span class="empty-icon">📷</span>' +
-      '<p>Belum ada foto lapangan untuk aset ini.</p>' +
-      '<p style="font-size:11px;margin-top:4px;">Gunakan tombol di atas untuk menambah foto.</p>' +
-      '</div>';
+    if (emptyState) emptyState.style.display = 'block';
+    if (carousel) carousel.style.display = 'none';
     return;
   }
 
-  var sumberLabel = {
-    exif_foto: '📍 EXIF Foto',
-    centroid: '📍 Titik poligon',
-    gps_hp: '📍 GPS HP',
-    titik_aset: '📍 Titik aset',
-    tidak_diketahui: 'Lokasi ?'
-  };
+  if (emptyState) emptyState.style.display = 'none';
+  if (carousel) carousel.style.display = 'flex';
 
-  body.innerHTML = '<div class="foto-modal-grid">' +
-    photos.map(function(p, idx) {
-      var isTemp = String(p.id || '').startsWith('temp_');
-      var delBtn = (isAdmin() && !isTemp)
-        ? '<button class="foto-thumb-del" data-id="' + escapeHtml(p.id) + '" title="Hapus foto ×">✕</button>'
-        : '';
-      var badge = isTemp ? '<span class="foto-uploading-badge">⏳ Uploading...</span>' : '';
-      return '<div class="foto-thumb-wrap' + (isTemp ? ' temp-uploading' : '') + '" data-idx="' + idx + '">' +
-        '<img src="' + escapeHtml(p.url_foto) + '" loading="lazy" alt="Foto lapangan">' +
-        '<div class="foto-thumb-overlay"><span>🔍</span></div>' +
-        badge +
-        delBtn +
-        '</div>';
-    }).join('') + '</div>';
+  _fotoModalState.currentIdx = 0;
+  buildCarouselThumbs();
+  updateCarouselView();
+}
 
-  // Event: klik thumbnail → buka lightbox
-  body.querySelectorAll('.foto-thumb-wrap').forEach(function(el) {
-    el.addEventListener('click', function(e) {
-      if (e.target.classList.contains('foto-thumb-del') || e.target.closest('.foto-thumb-del')) return;
-      var idx = parseInt(el.dataset.idx, 10);
-      openLightbox(idx);
+function buildCarouselThumbs() {
+  var photos = _fotoModalState.photos || [];
+  var track = document.getElementById('carouselThumbsTrack');
+  if (!track) return;
+  track.innerHTML = photos.map(function(p, i) {
+    return '<img class="carousel-thumb' + (i === _fotoModalState.currentIdx ? ' active' : '') +
+      '" src="' + escapeHtml(p.url_foto) + '" data-idx="' + i + '" alt="Thumb ' + (i+1) + '">';
+  }).join('');
+  
+  track.querySelectorAll('.carousel-thumb').forEach(function(t) {
+    t.addEventListener('click', function() {
+      _fotoModalState.currentIdx = parseInt(t.dataset.idx, 10);
+      updateCarouselView();
     });
   });
+}
 
-  // Event: hapus foto (admin)
-  if (isAdmin()) {
-    body.querySelectorAll('.foto-thumb-del').forEach(function(btn) {
-      btn.addEventListener('click', async function(e) {
+function updateCarouselView() {
+  var photos = _fotoModalState.photos;
+  var idx = _fotoModalState.currentIdx;
+  var p = photos[idx];
+  if (!p) return;
+
+  var sumberLabel = {
+    exif_foto: '📍 EXIF Foto', centroid: '📍 Titik poligon',
+    gps_hp: '📍 GPS HP', titik_aset: '📍 Titik aset', tidak_diketahui: 'Lokasi ?'
+  };
+
+  document.getElementById('carouselImg').src = p.url_foto;
+  var metaText = [
+    (idx + 1) + ' / ' + photos.length,
+    escapeHtml(p.tanggal || ''),
+    escapeHtml(sumberLabel[p.sumber_tag] || p.sumber_tag || ''),
+    (p.lat && p.lng) ? '📍 (' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + ')' : ''
+  ].filter(Boolean).join(' · ');
+  document.getElementById('carouselMeta').innerHTML = metaText;
+
+  var prevBtn = document.getElementById('carouselPrev');
+  var nextBtn = document.getElementById('carouselNext');
+  if (prevBtn) prevBtn.disabled = idx === 0;
+  if (nextBtn) nextBtn.disabled = idx === photos.length - 1;
+
+  var delBtn = document.getElementById('carouselDelete');
+  if (delBtn) {
+    var isTemp = String(p.id || '').startsWith('temp_');
+    if (isAdmin() && !isTemp) {
+      delBtn.style.display = 'block';
+      delBtn.onclick = async function(e) {
         e.stopPropagation();
         if (!confirm('Hapus foto ini?')) return;
-        var ok = await deletePhoto(btn.dataset.id);
+        var ok = await deletePhoto(p.id);
         if (ok) await loadAndRenderFotoModal(_fotoModalState.assetId);
-      });
-    });
+      };
+    } else {
+      delBtn.style.display = 'none';
+    }
   }
+
+  // Update active thumb
+  document.querySelectorAll('.carousel-thumb').forEach(function(t, i) {
+    t.classList.toggle('active', i === idx);
+  });
+  
+  var activeTh = document.querySelector('.carousel-thumb.active');
+  if (activeTh) activeTh.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 // ============================================================
@@ -1240,67 +1289,8 @@ async function saveFotoDrafts() {
 
 // ============================================================
 // LIGHTBOX
+// // Lightbox functions removed.
 // ============================================================
-function openLightbox(startIdx) {
-  _fotoModalState.currentIdx = startIdx;
-  var lb = document.getElementById('fotoLightbox');
-  lb.style.display = 'flex';
-  renderLightboxFrame();
-  buildLightboxThumbs();
-}
-
-function closeLightbox() {
-  var lb = document.getElementById('fotoLightbox');
-  lb.style.display = 'none';
-}
-
-function renderLightboxFrame() {
-  var photos = _fotoModalState.photos;
-  var idx = _fotoModalState.currentIdx;
-  var p = photos[idx];
-  if (!p) return;
-
-  var sumberLabel = {
-    exif_foto: '\ud83d\udccd EXIF Foto', centroid: '\ud83d\udccd Titik poligon',
-    gps_hp: '\ud83d\udccd GPS HP', titik_aset: '\ud83d\udccd Titik aset', tidak_diketahui: 'Lokasi ?'
-  };
-
-  document.getElementById('lightboxImg').src = p.url_foto;
-  var metaText = [
-    escapeHtml(p.tanggal || ''),
-    escapeHtml(sumberLabel[p.sumber_tag] || p.sumber_tag || ''),
-    (p.lat && p.lng) ? '\ud83d\udccd (' + Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5) + ')' : ''
-  ].filter(Boolean).join(' · ');
-  document.getElementById('lightboxMeta').innerHTML = metaText;
-  document.getElementById('lightboxCounter').textContent = (idx + 1) + ' / ' + photos.length;
-
-  document.getElementById('lightboxPrev').disabled = idx === 0;
-  document.getElementById('lightboxNext').disabled = idx === photos.length - 1;
-
-  // Update active thumb
-  document.querySelectorAll('.lightbox-thumb').forEach(function(t, i) {
-    t.classList.toggle('active', i === idx);
-  });
-
-  // Scroll aktif thumb ke tengah
-  var activeTh = document.querySelector('.lightbox-thumb.active');
-  if (activeTh) activeTh.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-}
-
-function buildLightboxThumbs() {
-  var photos = _fotoModalState.photos;
-  var container = document.getElementById('lightboxThumbs');
-  container.innerHTML = photos.map(function(p, i) {
-    return '<img class="lightbox-thumb' + (i === _fotoModalState.currentIdx ? ' active' : '') +
-      '" src="' + escapeHtml(p.url_foto) + '" data-idx="' + i + '" alt="Thumb ' + (i+1) + '">';
-  }).join('');
-  container.querySelectorAll('.lightbox-thumb').forEach(function(t) {
-    t.addEventListener('click', function() {
-      _fotoModalState.currentIdx = parseInt(t.dataset.idx, 10);
-      renderLightboxFrame();
-    });
-  });
-}
 
 // ============================================================
 // INISIALISASI event handler foto modal & lightbox (dipanggil sekali)
@@ -1314,6 +1304,7 @@ function initFotoModal() {
     clearFotoDraftArea();
     _fotoModalState.assetId = null;
     _fotoModalState.photos = [];
+    updateToggleButtons();
   }
   if (closeBtn) closeBtn.addEventListener('click', closeFotoModal);
 
@@ -1323,6 +1314,47 @@ function initFotoModal() {
   if (closeSideBtn) {
     closeSideBtn.addEventListener('click', function() {
       if (sidePanel) sidePanel.classList.remove('open');
+      updateToggleButtons();
+    });
+  }
+
+  // Floating Toggle logic
+  var btnToggleLeft = document.getElementById('btnToggleLeft');
+  var btnToggleRight = document.getElementById('btnToggleRight');
+  if (btnToggleLeft) {
+    btnToggleLeft.addEventListener('click', function() {
+      if (drawer && selectedId) {
+        drawer.classList.add('open');
+        updateToggleButtons();
+      }
+    });
+  }
+  if (btnToggleRight) {
+    btnToggleRight.addEventListener('click', function() {
+      if (sidePanel && selectedId) {
+        sidePanel.classList.add('open');
+        updateToggleButtons();
+      }
+    });
+  }
+
+  // Carousel navigation
+  var carouselPrev = document.getElementById('carouselPrev');
+  var carouselNext = document.getElementById('carouselNext');
+  if (carouselPrev) {
+    carouselPrev.addEventListener('click', function() {
+      if (_fotoModalState.currentIdx > 0) {
+        _fotoModalState.currentIdx--;
+        updateCarouselView();
+      }
+    });
+  }
+  if (carouselNext) {
+    carouselNext.addEventListener('click', function() {
+      if (_fotoModalState.currentIdx < (_fotoModalState.photos.length - 1)) {
+        _fotoModalState.currentIdx++;
+        updateCarouselView();
+      }
     });
   }
 
