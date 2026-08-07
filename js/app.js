@@ -691,15 +691,21 @@ function updateToggleButtons() {
   var drawerRight = document.getElementById('sidePanel');
   var btnToggleLeft = document.getElementById('btnToggleLeft');
   var btnToggleRight = document.getElementById('btnToggleRight');
+  var iconLeft = document.getElementById('btnToggleLeftIcon');
+  var iconRight = document.getElementById('btnToggleRightIcon');
   
-  if (selectedId && drawerRight && !drawerRight.classList.contains('open')) {
+  if (selectedId && drawerRight) {
     if (btnToggleRight) btnToggleRight.style.display = 'flex';
+    var isOpen = drawerRight.classList.contains('open');
+    if (iconRight) iconRight.textContent = isOpen ? '❯' : '❮';
   } else {
     if (btnToggleRight) btnToggleRight.style.display = 'none';
   }
 
-  if (selectedId && drawerLeft && !drawerLeft.classList.contains('open')) {
+  if (selectedId && drawerLeft) {
     if (btnToggleLeft) btnToggleLeft.style.display = 'flex';
+    var isOpen = drawerLeft.classList.contains('open');
+    if (iconLeft) iconLeft.textContent = isOpen ? '❮' : '❯';
   } else {
     if (btnToggleLeft) btnToggleLeft.style.display = 'none';
   }
@@ -1245,7 +1251,7 @@ function initFotoModal() {
   if (btnToggleLeft) {
     btnToggleLeft.addEventListener('click', function() {
       if (drawer && selectedId) {
-        drawer.classList.add('open');
+        drawer.classList.toggle('open');
         updateToggleButtons();
       }
     });
@@ -1253,7 +1259,7 @@ function initFotoModal() {
   if (btnToggleRight) {
     btnToggleRight.addEventListener('click', function() {
       if (sidePanel && selectedId) {
-        sidePanel.classList.add('open');
+        sidePanel.classList.toggle('open');
         updateToggleButtons();
       }
     });

@@ -10,7 +10,7 @@
   <script>guardDashboardPage();</script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-  <link rel="stylesheet" href="css/style.css?v=5.2">
+  <link rel="stylesheet" href="css/style.css?v=15">
 </head>
 
 <body>
@@ -24,7 +24,6 @@
       <span id="userInfo" style="font-size:12px;color:#C9D6E3;margin-right:4px;"></span>
       <button id="btnBurger" class="burger-btn" aria-label="Menu">☰</button>
       <div id="headerActions" class="header-actions">
-        <button id="btnLogout" style="display:none;">Keluar</button>
         <button id="btnRefresh">Muat ulang dari Sheets</button>
         <button id="btnExportSheets" class="primary">Ekspor ke Excel</button>
         <button id="btnExport" class="primary">Unduh GeoJSON</button>
@@ -33,7 +32,7 @@
   </header>
 
   <div class="toolbar">
-    <input type="text" id="search" placeholder="Cari kode aset, lokasi, atau status..." style="width:260px;">
+    <input type="text" id="search" placeholder="Cari kode aset, lokasi, atau status...">
     <select id="filterAsal">
       <option value="all">Semua asal aset</option>
       <option value="Eks BPPN">Eks BPPN</option>
@@ -123,9 +122,13 @@
   <div class="main">
     <div id="map"></div>
     
-    <!-- Tombol Toggle Kiri & Kanan (Awalnya disembunyikan) -->
-    <button id="btnToggleLeft" class="floating-toggle floating-left" style="display:none;" title="Buka Galeri Foto">📸</button>
-    <button id="btnToggleRight" class="floating-toggle floating-right" style="display:none;" title="Buka Detail Aset">❮ Detail</button>
+    <!-- Tombol Toggle Chevron Kiri & Kanan -->
+    <button id="btnToggleLeft" class="floating-toggle floating-left" style="display:none;" title="Toggle Galeri Foto">
+      <span class="toggle-icon" id="btnToggleLeftIcon">❯</span> <span class="toggle-text">Foto</span>
+    </button>
+    <button id="btnToggleRight" class="floating-toggle floating-right" style="display:none;" title="Toggle Detail Aset">
+      <span class="toggle-text">Detail</span> <span class="toggle-icon" id="btnToggleRightIcon">❮</span>
+    </button>
 
     
     <!-- Drawer Kanan: Panel Detail Aset -->
@@ -151,7 +154,7 @@
       <div class="foto-modal-actions">
         <input type="file" accept="image/*" multiple id="fotoInputKomputer" style="display:none;">
         <input type="file" accept="image/*" capture="environment" id="fotoInputKamera" style="display:none;">
-        <button class="btn-upload-komputer" id="btnUploadKomputer">🖼️ Pilih Foto dari Komputer</button>
+        <button class="btn-upload-komputer" id="btnUploadKomputer">Unggah Foto</button>
         <!-- tombol kamera di-render via JS hanya saat mobile -->
       </div>
 
@@ -274,7 +277,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  <script src="js/api.js?v=14"></script>
-  <script src="js/app.js?v=14"></script>
+  <script src="js/api.js?v=15"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 </html>

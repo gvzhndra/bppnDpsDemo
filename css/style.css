@@ -12,7 +12,23 @@
   .header-actions{display:flex;gap:8px;align-items:center;}
   .burger-btn{display:none;background:transparent;border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:16px;padding:6px 10px;}
   .burger-btn:hover{background:rgba(255,255,255,0.1);}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 24px;margin-bottom:10px; background:var(--card);border-bottom:1px solid var(--border);align-items:center;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;padding:14px 24px;margin-bottom:10px; background:var(--card);border-bottom:1px solid var(--border);align-items:center;}
+  .toolbar input, .toolbar select {
+    flex: 1 1 200px;
+    height: 42px;
+    min-height: 42px;
+    box-sizing: border-box;
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 0 14px;
+  }
+  .toolbar select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
   button{cursor:pointer;font-size:13px;border-radius:6px;border:1px solid var(--border);background:#fff;padding:8px 14px;color:var(--text);}
   button:hover{background:#F0F2F4;}
   button.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -29,16 +45,17 @@
   
   /* ---- Drawer Styles (BMN Idle Style) ---- */
   .floating-toggle {
-    position: absolute; top: 120px; z-index: 500;
+    position: absolute; top: 12px; z-index: 500;
     background: #fff; border: 1px solid var(--border);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    padding: 10px 8px; border-radius: 8px;
-    font-size: 14px; cursor: pointer; color: var(--navy); font-weight: 600;
-    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    padding: 8px 14px; border-radius: 20px;
+    font-size: 13px; cursor: pointer; color: var(--navy); font-weight: 600;
+    display: flex; align-items: center; gap: 6px; justify-content: center; transition: all 0.2s ease;
   }
-  .floating-toggle:hover { background: #F1F5F9; }
-  .floating-left { left: 24px; border-radius: 0 8px 8px 0; border-left: none; }
-  .floating-right { right: 24px; border-radius: 8px 0 0 8px; border-right: none; }
+  .floating-toggle:hover { background: #F1F5F9; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+  .floating-left { left: 36px; }
+  .floating-right { right: 36px; }
+  .toggle-icon { font-size: 14px; font-weight: bold; line-height: 1; transition: transform 0.2s ease; }
 
   .drawer-right {
     position:absolute;top:0;right:24px;width:400px;max-width:90vw;height:calc(100vh - 230px);
@@ -683,19 +700,30 @@
     .header-actions.open{display:flex;}
     .header-actions button{width:100%;}
 
-    .toolbar{flex-wrap:wrap;}
-    .toolbar input, .toolbar select{width:100%;}
+    .toolbar{flex-direction:column;gap:8px;padding:12px 14px;}
+    .toolbar input, .toolbar select{width:100%;flex:1 1 100%;}
 
     .stats{grid-template-columns:repeat(2, 1fr);padding:12px 14px;}
     .stat.hero-stat{grid-row:span 1;grid-column:span 2;}
     .stats-secondary{grid-template-columns:repeat(2, 1fr);padding:0 14px 12px;}
     .legend{padding:10px 14px 8px;}
 
-    .main{padding:0 14px 12px;}
-    #map{height:calc(100vh - 350px);}
+    .main{display:flex;flex-direction:column;gap:14px;padding:0 14px 14px;position:relative;}
+    #map{height:360px;min-height:300px;border-radius:8px;order:1;}
+    .floating-left, .floating-right{display:none !important;}
     .drawer-right, .drawer-left {
-      width:calc(100% - 28px); right:14px; left:14px; height:calc(100vh - 350px);
+      position:static !important;
+      width:100% !important;
+      max-width:100% !important;
+      height:auto !important;
+      max-height:none !important;
+      transform:none !important;
+      box-shadow:none !important;
+      border-radius:8px !important;
+      border:1px solid var(--border) !important;
     }
+    .drawer-right { order: 2; }
+    .drawer-left { order: 3; }
     .table-wrap{margin:0 14px 14px;overflow-x:auto;}
     table{min-width:640px;}
 
