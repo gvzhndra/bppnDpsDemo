@@ -26,7 +26,7 @@ function showToast(text){
 
 async function apiGet(action, extraParams){
   const params = new URLSearchParams(Object.assign(
-    { action: action || "getAset", token: getToken() || "" },
+    { action: action || "getAset", token: getToken() || "", _t: Date.now() },
     extraParams || {}
   ));
   const res = await fetch(API_URL + "?" + params.toString());
