@@ -24,9 +24,36 @@
   .stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;}
   .stat span{display:block;font-size:12px;color:var(--text-mut);}
   .stat strong{display:block;font-size:20px;font-weight:600;margin-top:2px;}
-  .main{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;padding:0 24px 14px;align-items:start;}
-  #map{height:480px;border-radius:8px;border:1px solid var(--border);}
-  .panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:480px;max-height:480px;overflow-y:auto;}
+  .main{position:relative;display:block;padding:0 24px 14px;}
+  #map{width:100%;height:calc(100vh - 230px);border-radius:8px;border:1px solid var(--border);z-index:10;}
+  
+  /* ---- Drawer Styles (BMN Idle Style) ---- */
+  .drawer-right {
+    position:absolute;top:0;right:24px;width:400px;max-width:90vw;height:calc(100vh - 230px);
+    background:var(--card);box-shadow:-4px 0 20px rgba(0,0,0,0.15);z-index:1000;
+    transition:transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform:translateX(calc(100% + 40px));border-radius:0 8px 8px 0;
+    border:1px solid var(--border);border-left:none;overflow-y:auto;padding:16px;
+  }
+  .drawer-right.open { transform:translateX(0); }
+  
+  .drawer-close {
+    position:absolute;top:12px;right:12px;background:none;border:none;
+    font-size:18px;color:var(--text-mut);cursor:pointer;
+    width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    transition:background 0.2s, color 0.2s;
+  }
+  .drawer-close:hover { background:var(--border);color:var(--text); }
+  
+  .drawer-left {
+    position:absolute;top:0;left:24px;width:450px;max-width:90vw;height:calc(100vh - 230px);
+    background:var(--card);box-shadow:4px 0 20px rgba(0,0,0,0.15);z-index:1000;
+    transition:transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform:translateX(calc(-100% - 40px));border-radius:8px 0 0 8px;
+    border:1px solid var(--border);border-right:none;display:flex;flex-direction:column;
+  }
+  .drawer-left.open { transform:translateX(0); }
+
   .panel h3{font-size:14px;margin:0 0 12px;}
   .field{margin-bottom:10px;}
   .field label{display:block;font-size:12px;color:var(--text-mut);margin-bottom:4px;}
@@ -99,36 +126,13 @@
   }
   .btn-open-foto:hover { background: linear-gradient(135deg, #122A44, #0A1A2E); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,58,92,0.3); }
 
-  /* ---- Foto Modal Overlay (Desktop) ---- */
-  .foto-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(15, 23, 42, 0.75);
-    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 8000; padding: 20px;
+    /* ---- Foto Drawer Layout ---- */
+  .foto-drawer-header {
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:16px 20px;border-bottom:1px solid var(--border);
   }
-  .foto-modal-overlay.open { display: flex; }
-
-  .foto-modal {
-    background: #fff; border-radius: 16px;
-    width: min(860px, 94vw); max-height: 88vh;
-    display: flex; flex-direction: column;
-    box-shadow: 0 30px 60px -10px rgba(0,0,0,0.45);
-    animation: fotoModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-  }
-  @keyframes fotoModalIn {
-    from { transform: scale(0.93) translateY(16px); opacity: 0; }
-    to   { transform: scale(1) translateY(0); opacity: 1; }
-  }
-
-  .foto-modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .foto-modal-title { font-size: 15px; font-weight: 700; color: var(--navy); margin: 0; }
-  .foto-modal-subtitle { font-size: 12px; color: var(--text-mut); margin: 2px 0 0; }
+  .foto-drawer-title { font-size:16px;font-weight:600;color:var(--text);margin:0; }
+  .foto-drawer-subtitle { font-size:12px;color:var(--text-mut);margin:4px 0 0 0; }
   .foto-modal-close {
     background: #F1F5F9; border: none; border-radius: 8px;
     width: 32px; height: 32px; cursor: pointer; font-size: 16px;
@@ -161,7 +165,6 @@
     flex: 1; overflow-y: auto; padding: 20px;
   }
 
-  /* ---- Grid thumbnail persegi ---- */
   .foto-modal-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -207,7 +210,6 @@
   }
   .foto-modal-empty .empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
 
-  /* ---- Skeleton loading ---- */
   .foto-skeleton {
     aspect-ratio: 1/1; border-radius: 10px;
     background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
@@ -219,7 +221,6 @@
     100% { background-position: -200% 0; }
   }
 
-  /* ---- Lightbox ---- */
   .foto-lightbox {
     position: fixed; inset: 0;
     background: rgba(5, 10, 20, 0.95);
@@ -286,7 +287,6 @@
     padding: 2px 4px; border-radius: 4px; text-align: center; backdrop-filter: blur(4px);
   }
 
-  /* ---- Area Draft Foto Baru Dipilih (Direct In-UI Preview) ---- */
   .foto-draft-container {
     background: #F0FDF4; border: 1.5px dashed #22C55E; border-radius: 12px;
     margin: 12px 20px 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
@@ -344,7 +344,6 @@
   }
   .progress-text { font-size: 12px; color: var(--text); margin: 0; text-align: center; font-weight: 600; }
 
-  /* ---- Preview Modal Upload Foto ---- */
   .foto-preview-overlay {
     position: fixed; inset: 0;
     background: rgba(15, 23, 42, 0.85);
@@ -434,13 +433,11 @@
   }
   .progress-text { font-size: 12px; color: var(--text); margin: 0; text-align: center; font-weight: 500; }
 
-  /* ---- Pagination tabel aset ---- */
   .pagination{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
   .pagination-buttons{display:flex;align-items:center;gap:10px;}
   .pagination-buttons button{padding:6px 12px;}
   .pagination-buttons button:disabled{opacity:0.4;cursor:not-allowed;}
 
-  /* ---- Navigasi Tab Tabel & Clickable Cards ---- */
   .table-tabs{display:flex;gap:8px;border-bottom:2px solid var(--border);padding-bottom:2px;}
   .tab-btn{background:none;border:none;font-size:14px;font-weight:600;color:var(--text-mut);padding:8px 16px;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;border-radius:0;}
   .tab-btn:hover{color:var(--navy);background:none;}
@@ -449,7 +446,6 @@
   .clickable-stat{cursor:pointer;transition:transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;}
   .clickable-stat:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.08);border-color:var(--navy);}
 
-  /* ---- Executive KPI Panel (1 Panel Terpadu 3 Seksi) ---- */
   .kpi-panel-container {
     display: grid;
     grid-template-columns: 220px 1.4fr 1.2fr;
@@ -457,7 +453,6 @@
     padding: 14px 24px;
   }
 
-  /* Seksi 1: Hero Kluster (Kiri) */
   .kpi-hero-block {
     background: linear-gradient(135deg, #1B3A5C 0%, #0F253E 100%);
     border: 1px solid #122A44;
@@ -487,7 +482,6 @@
   .kpi-hero-sub { font-size: 11px; color: #CBD5E1; }
   .kpi-hero-hint { font-size: 10px; color: #94A3B8; background: rgba(255,255,255,0.08); padding: 4px 8px; border-radius: 4px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1); }
 
-  /* Seksi 2: Metrik Fisik & Geometri (Tengah) */
   .kpi-metrics-block {
     background: var(--card);
     border: 1px solid var(--border);
@@ -504,7 +498,6 @@
   .kpi-num { font-size: 18px; font-weight: 600; color: var(--text); }
   .kpi-num.warn-text { color: #D97706; }
 
-  /* Seksi 3: Status Penatausahaan - Interactive Pills (Kanan) */
   .kpi-status-block {
     background: var(--card);
     border: 1px solid var(--border);
@@ -534,7 +527,6 @@
   .pill-name { color: var(--text); font-weight: 500; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pill-val { font-size: 13px; font-weight: 700; color: var(--navy); }
 
-  /* ---- Baris & Akordion Kluster ---- */
   .cluster-card{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;transition:border-color 0.2s;}
   .cluster-card:hover{border-color:#cbd5e1;}
   .cluster-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#FAFBFD;cursor:pointer;flex-wrap:wrap;gap:10px;user-select:none;}
@@ -548,10 +540,6 @@
   .cluster-card.open .cluster-details-wrap{display:block;}
   .cluster-badge{background:#E2E8F0;color:#334155;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:500;}
 
-  /* ================================================================
-     MOBILE (layar sempit / portrait HP) -- perbaikan layout terarah,
-     bukan redesign total. Fokus: elemen yang paling gampang berantakan.
-     ================================================================ */
   @media (max-width: 820px){
     header{flex-direction:row;align-items:flex-start;justify-content:space-between;flex-wrap:nowrap;padding:10px 14px;}
     header > div:first-child{min-width:0;flex:1;}
@@ -584,10 +572,11 @@
     .stats-secondary{grid-template-columns:repeat(2, 1fr);padding:0 14px 12px;}
     .legend{padding:10px 14px 8px;}
 
-    .main{grid-template-columns:1fr;padding:0 14px 12px;}
-    #map{height:280px;}
-    .panel{min-height:340px;max-height:60vh;}
-
+    .main{padding:0 14px 12px;}
+    #map{height:calc(100vh - 350px);}
+    .drawer-right, .drawer-left {
+      width:calc(100% - 28px); right:14px; left:14px; height:calc(100vh - 350px);
+    }
     .table-wrap{margin:0 14px 14px;overflow-x:auto;}
     table{min-width:640px;}
 

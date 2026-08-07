@@ -676,7 +676,10 @@ function selectAsset(id, mode) {
   else renderViewPanel(a);
 
   const panel = document.getElementById('sidePanel');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (panel) {
+    panel.classList.add('open');
+    panel.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function renderViewPanel(a) {
@@ -951,7 +954,7 @@ async function openFotoModal(assetId, assetName) {
   _fotoModalState.assetName = assetName;
   clearFotoDraftArea();
 
-  var overlay = document.getElementById('fotoModalOverlay');
+  var drawer = document.getElementById('fotoDrawer');
   var titleEl = document.getElementById('fotoModalTitle');
   var subtitleEl = document.getElementById('fotoModalSubtitle');
   var body = document.getElementById('fotoModalBody');
@@ -965,8 +968,7 @@ async function openFotoModal(assetId, assetName) {
       Array(8).fill('<div class="foto-skeleton"></div>').join('') + '</div>';
   }
 
-  overlay.style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  if (drawer) drawer.classList.add('open');
 
   // Tambah tombol kamera hanya di mobile
   _injectKameraBtn();
@@ -1304,20 +1306,25 @@ function buildLightboxThumbs() {
 // INISIALISASI event handler foto modal & lightbox (dipanggil sekali)
 // ============================================================
 function initFotoModal() {
-  // Tutup modal
-  var closeBtn = document.getElementById('fotoModalClose');
-  var overlay = document.getElementById('fotoModalOverlay');
+  // Tutup drawer foto
+  var closeBtn = document.getElementById('btnCloseFotoDrawer');
+  var drawer = document.getElementById('fotoDrawer');
   function closeFotoModal() {
-    overlay.style.display = 'none';
-    document.body.style.overflow = '';
+    if (drawer) drawer.classList.remove('open');
     clearFotoDraftArea();
     _fotoModalState.assetId = null;
     _fotoModalState.photos = [];
   }
   if (closeBtn) closeBtn.addEventListener('click', closeFotoModal);
-  if (overlay) overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) closeFotoModal();
-  });
+
+  // Inisialisasi drawer side panel (kanan)
+  var closeSideBtn = document.getElementById('btnCloseSidePanel');
+  var sidePanel = document.getElementById('sidePanel');
+  if (closeSideBtn) {
+    closeSideBtn.addEventListener('click', function() {
+      if (sidePanel) sidePanel.classList.remove('open');
+    });
+  }
 
   // Upload komputer (multi-file)
   var btnKomputer = document.getElementById('btnUploadKomputer');

@@ -122,10 +122,57 @@
 
   <div class="main">
     <div id="map"></div>
-    <div class="panel" id="sidePanel">
-      <div class="empty-hint">Belum ada aset yang dipilih.
-        <br><br>
-        Pilih salah satu aset pada tabel di bawah.
+    
+    <!-- Drawer Kanan: Panel Detail Aset -->
+    <div class="drawer-right" id="sidePanel">
+      <button class="drawer-close" id="btnCloseSidePanel">✕</button>
+      <div id="sidePanelContent">
+        <div class="empty-hint">Belum ada aset yang dipilih.
+          <br><br>
+          Pilih salah satu aset pada tabel di bawah atau klik di peta.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Drawer Kiri: Galeri Foto Lapangan -->
+    <div class="drawer-left" id="fotoDrawer">
+      <div class="foto-drawer-header">
+        <div>
+          <p class="foto-drawer-title" id="fotoModalTitle">Foto Lapangan</p>
+          <p class="foto-drawer-subtitle" id="fotoModalSubtitle">Galeri foto dokumentasi aset</p>
+        </div>
+        <button class="drawer-close" id="btnCloseFotoDrawer" aria-label="Tutup">✕</button>
+      </div>
+      <div class="foto-modal-actions">
+        <input type="file" accept="image/*" multiple id="fotoInputKomputer" style="display:none;">
+        <input type="file" accept="image/*" capture="environment" id="fotoInputKamera" style="display:none;">
+        <button class="btn-upload-komputer" id="btnUploadKomputer">🖼️ Pilih Foto dari Komputer</button>
+        <!-- tombol kamera di-render via JS hanya saat mobile -->
+      </div>
+
+      <!-- Area Preview Foto yang Baru Dipilih (Draft Belum Disimpan) -->
+      <div class="foto-draft-container" id="fotoDraftContainer" style="display:none;">
+        <div class="foto-draft-header">
+          <span class="foto-draft-title" id="fotoDraftTitle">📸 0 Foto Dipilih (Draft)</span>
+          <button class="btn-clear-draft" id="btnClearDraft">Batal</button>
+        </div>
+        <div class="foto-draft-grid" id="fotoDraftGrid"></div>
+        <div class="foto-draft-footer">
+          <div class="foto-upload-progress" id="fotoUploadProgress" style="display:none;">
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="fotoProgressBarFill" style="width: 0%;"></div>
+            </div>
+            <p class="progress-text" id="fotoProgressText">Mempersiapkan pengunggahan...</p>
+          </div>
+          <button class="btn-save-draft" id="btnSaveDraft">💾 Simpan Foto</button>
+        </div>
+      </div>
+
+      <div class="foto-modal-body" id="fotoModalBody">
+        <div class="foto-modal-empty">
+          <span class="empty-icon">📷</span>
+          <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -197,49 +244,7 @@
     </div>
   </div>
 
-  <!-- Modal Galeri Foto Lapangan -->
-  <div class="foto-modal-overlay" id="fotoModalOverlay">
-    <div class="foto-modal" id="fotoModal">
-      <div class="foto-modal-header">
-        <div>
-          <p class="foto-modal-title" id="fotoModalTitle">Foto Lapangan</p>
-          <p class="foto-modal-subtitle" id="fotoModalSubtitle">Galeri foto dokumentasi aset</p>
-        </div>
-        <button class="foto-modal-close" id="fotoModalClose" aria-label="Tutup">✕</button>
-      </div>
-      <div class="foto-modal-actions">
-        <input type="file" accept="image/*" multiple id="fotoInputKomputer" style="display:none;">
-        <input type="file" accept="image/*" capture="environment" id="fotoInputKamera" style="display:none;">
-        <button class="btn-upload-komputer" id="btnUploadKomputer">🖼️ Pilih Foto dari Komputer</button>
-        <!-- tombol kamera di-render via JS hanya saat mobile -->
-      </div>
-
-      <!-- Area Preview Foto yang Baru Dipilih (Draft Belum Disimpan) -->
-      <div class="foto-draft-container" id="fotoDraftContainer" style="display:none;">
-        <div class="foto-draft-header">
-          <span class="foto-draft-title" id="fotoDraftTitle">📸 0 Foto Dipilih (Draft)</span>
-          <button class="btn-clear-draft" id="btnClearDraft">Batal</button>
-        </div>
-        <div class="foto-draft-grid" id="fotoDraftGrid"></div>
-        <div class="foto-draft-footer">
-          <div class="foto-upload-progress" id="fotoUploadProgress" style="display:none;">
-            <div class="progress-bar-wrap">
-              <div class="progress-bar-fill" id="fotoProgressBarFill" style="width: 0%;"></div>
-            </div>
-            <p class="progress-text" id="fotoProgressText">Mempersiapkan pengunggahan...</p>
-          </div>
-          <button class="btn-save-draft" id="btnSaveDraft">💾 Simpan Foto</button>
-        </div>
-      </div>
-
-      <div class="foto-modal-body" id="fotoModalBody">
-        <div class="foto-modal-empty">
-          <span class="empty-icon">📷</span>
-          <p>Pilih aset terlebih dahulu untuk melihat foto lapangan.</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- foto-modal-overlay dihapus karena sudah dipindah ke drawer-left -->
 
   <!-- Lightbox -->
   <div class="foto-lightbox" id="fotoLightbox">
