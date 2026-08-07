@@ -681,6 +681,9 @@ function selectAsset(id, mode) {
     panel.scrollTo({ top: 0, behavior: 'smooth' });
     updateToggleButtons();
   }
+  
+  // Buka drawer foto secara otomatis saat aset dipilih
+  openFotoModal(a.id, a.props.kode_aset || a.id);
 }
 
 function updateToggleButtons() {
@@ -779,12 +782,6 @@ function renderViewPanel(a) {
         </span>
       </div>
     ` : '<div class="view-row"><span class="view-label">Buka di Peta</span><span class="view-value" style="color:var(--text-mut);">Belum ada koordinat</span></div>'}
-    <div class="field" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">
-      <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Foto Lapangan</label>
-      <button class="btn-open-foto" id="btnOpenFotoModal" data-asset-id="${a.id}" data-asset-name="${escapeHtml(a.props.kode_aset || a.id)}">
-        📸 Buka Galeri Foto
-      </button>
-    </div>
     ${extraSection}
     <div class="field" style="border-top:1px dashed var(--border);padding-top:10px;margin-top:10px;">
       <label style="font-weight:500;color:var(--text);margin-bottom:8px;display:block;">Riwayat dokumen</label>
@@ -793,14 +790,6 @@ function renderViewPanel(a) {
     </div>
     ${actionButtons}
   `;
-
-  const btnOpenFoto = document.getElementById('btnOpenFotoModal');
-  if (btnOpenFoto) {
-    btnOpenFoto.addEventListener('click', () => {
-      openFotoModal(a.id, a.props.kode_aset || a.id);
-    });
-  }
-
   if (isAdmin()) {
     document.getElementById('btnEditAsset').addEventListener('click', () => selectAsset(a.id, 'edit'));
     document.getElementById('btnDeleteAsset').addEventListener('click', () => {
