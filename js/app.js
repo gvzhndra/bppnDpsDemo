@@ -1275,17 +1275,17 @@ function initFotoModal() {
   var inputKomputer = document.getElementById('fotoInputKomputer');
   if (btnKomputer) btnKomputer.addEventListener('click', function() { inputKomputer.click(); });
   if (inputKomputer) inputKomputer.addEventListener('change', function(e) {
-    var files = e.target.files;
+    var fileList = Array.from(e.target.files || []);
     e.target.value = '';
-    if (files && files.length && _fotoModalState.assetId) addDraftFiles(files);
+    if (fileList.length && _fotoModalState.assetId) addDraftFiles(fileList);
   });
 
   // Upload kamera HP
   var inputKamera = document.getElementById('fotoInputKamera');
   if (inputKamera) inputKamera.addEventListener('change', function(e) {
-    var files = e.target.files;
+    var fileList = Array.from(e.target.files || []);
     e.target.value = '';
-    if (files && files.length && _fotoModalState.assetId) addDraftFiles(files);
+    if (fileList.length && _fotoModalState.assetId) addDraftFiles(fileList);
   });
 
   // Event handlers untuk Draft Foto Area (Sudah dihapus diganti modal progress)
